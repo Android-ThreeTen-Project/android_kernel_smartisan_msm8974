@@ -566,7 +566,7 @@ void wcnss_riva_dump_pmic_regs(void)
 	}
 }
 
-/* wcnss_reset_intr() is invoked when host drivers fails to
+/* wcnss_reset_fiq() is invoked when host drivers fails to
  * communicate with WCNSS over SMD; so logging these registers
  * helps to know WCNSS failure reason
  */
@@ -1146,26 +1146,6 @@ void wcnss_log_debug_regs_on_bite(void)
 #endif
 
 /* interface to reset wcnss by sending the reset interrupt */
-void wcnss_reset_intr(void)
-{
-	if (wcnss_hardware_type() == WCNSS_PRONTO_HW) {
-		wcnss_pronto_log_debug_regs();
-		if (wcnss_get_mux_control())
-			wcnss_log_iris_regs();
-		if (!wcnss_device_is_shutdown()) {
-			/* Insert memory barrier before writing fiq register */
-			wmb();
-			__raw_writel(1 << 16, penv->fiq_reg);
-		} else {
-			pr_info("%s: Block FIQ during power up sequence\n",
-				__func__);
-		}
-	} else {
-		wcnss_riva_log_debug_regs();
-	}
-}
-EXPORT_SYMBOL(wcnss_reset_intr);
-
 void wcnss_reset_fiq(bool clk_chk_en)
 {
 	if (wcnss_hardware_type() == WCNSS_PRONTO_HW) {
@@ -1176,9 +1156,14 @@ void wcnss_reset_fiq(bool clk_chk_en)
 			if (wcnss_get_mux_control())
 				wcnss_log_iris_regs();
 		}
-		/* Insert memory barrier before writing fiq register */
-		wmb();
-		__raw_writel(1 << 16, penv->fiq_reg);
+		if (!wcnss_device_is_shutdown()) {
+			/* Insert memory barrier before writing fiq register */
+			wmb();
+			__raw_writel(1 << 16, penv->fiq_reg);
+		} else {
+			pr_info("%s: Block FIQ during power up sequence\n",
+				__func__);
+		}
 	} else {
 		wcnss_riva_log_debug_regs();
 	}
@@ -2992,7 +2977,7 @@ wcnss_trigger_config(struct platform_device *pdev)
 	} while (pil_retry++ < WCNSS_MAX_PIL_RETRY && IS_ERR(penv->pil));
 
 	if (IS_ERR(penv->pil)) {
-		wcnss_reset_intr();
+		wcnss_reset_fiq(false);
 		if (penv->wcnss_notif_hdle)
 			subsys_notif_unregister_notifier(penv->wcnss_notif_hdle,
 				&wnb);
