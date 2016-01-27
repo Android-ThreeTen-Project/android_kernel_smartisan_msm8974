@@ -283,6 +283,7 @@
 
 #include <asm/uaccess.h>
 #include <asm/ioctls.h>
+#include <asm/unaligned.h>
 
 int sysctl_tcp_fin_timeout __read_mostly = TCP_FIN_TIMEOUT;
 
@@ -2721,6 +2722,7 @@ void tcp_get_info(struct sock *sk, struct tcp_info *info)
 	const struct tcp_sock *tp = tcp_sk(sk);
 	const struct inet_connection_sock *icsk = inet_csk(sk);
 	u32 now = tcp_time_stamp;
+	u64 rate64;
 
 	memset(info, 0, sizeof(*info));
 
@@ -2781,14 +2783,14 @@ void tcp_get_info(struct sock *sk, struct tcp_info *info)
 
 	info->tcpi_total_retrans = tp->total_retrans;
 
-	info->tcpi_pacing_rate = sk->sk_pacing_rate != ~0U ?
-					sk->sk_pacing_rate : ~0ULL;
+	rate64 = sk->sk_pacing_rate != ~0U ? sk->sk_pacing_rate : ~0ULL;
+	put_unaligned(rate64, &info->tcpi_pacing_rate);
 	/* This 3.10 tree predates sk_max_pacing_rate. */
-	info->tcpi_max_pacing_rate = ~0ULL;
+	put_unaligned(~0ULL, &info->tcpi_max_pacing_rate);
 
 	spin_lock_bh(&sk->sk_lock.slock);
-	info->tcpi_bytes_acked = tp->bytes_acked;
-	info->tcpi_bytes_received = tp->bytes_received;
+	put_unaligned(tp->bytes_acked, &info->tcpi_bytes_acked);
+	put_unaligned(tp->bytes_received, &info->tcpi_bytes_received);
 	info->tcpi_segs_out = tp->segs_out;
 	info->tcpi_segs_in = tp->segs_in;
 	spin_unlock_bh(&sk->sk_lock.slock);
