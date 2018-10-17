@@ -26,7 +26,7 @@
 #include <linux/uaccess.h>
 #include <linux/cdev.h>
 #include <linux/platform_device.h>
-#include <linux/input/synaptics_dsx_v2.h>
+#include <linux/input/synaptics_dsx_sfo.h>
 #include "synaptics_dsx_core.h"
 
 #define CHAR_DEVICE_NAME "rmi"
@@ -72,7 +72,7 @@ struct rmidev_data {
 static struct bin_attribute attr_data = {
 	.attr = {
 		.name = "data",
-		.mode = (S_IRUGO | S_IWUSR),
+		.mode = (S_IRUGO | S_IWUGO),
 	},
 	.size = 0,
 	.read = rmidev_sysfs_data_show,
@@ -80,11 +80,11 @@ static struct bin_attribute attr_data = {
 };
 
 static struct device_attribute attrs[] = {
-	__ATTR(open, S_IWUSR | S_IWGRP,
-			NULL,
+	__ATTR(open, S_IWUGO,
+			synaptics_rmi4_show_error,
 			rmidev_sysfs_open_store),
-	__ATTR(release, S_IWUSR | S_IWGRP,
-			NULL,
+	__ATTR(release, S_IWUGO,
+			synaptics_rmi4_show_error,
 			rmidev_sysfs_release_store),
 	__ATTR(attn_state, S_IRUGO,
 			rmidev_sysfs_attn_state_show,
@@ -347,7 +347,7 @@ static ssize_t rmidev_read(struct file *filp, char __user *buf,
 		size_t count, loff_t *f_pos)
 {
 	ssize_t retval;
-	unsigned char *tmpbuf;
+	unsigned char tmpbuf[count + 1];
 	struct rmidev_data *dev_data = filp->private_data;
 
 	if (IS_ERR(dev_data)) {
@@ -355,25 +355,14 @@ static ssize_t rmidev_read(struct file *filp, char __user *buf,
 		return -EBADF;
 	}
 
-	mutex_lock(&(dev_data->file_mutex));
+	if (count == 0)
+		return 0;
 
 	if (count > (REG_ADDR_LIMIT - *f_pos))
 		count = REG_ADDR_LIMIT - *f_pos;
 
-	if (count == 0) {
-		retval = 0;
-		goto unlock;
-	}
+	mutex_lock(&(dev_data->file_mutex));
 
-	if (*f_pos > REG_ADDR_LIMIT) {
-		retval = -EFAULT;
-		goto unlock;
-	}
-	tmpbuf = kzalloc(count + 1, GFP_KERNEL);
-	if (!tmpbuf) {
-		retval = -ENOMEM;
-		goto unlock;
-	}
 	retval = synaptics_rmi4_reg_read(rmidev->rmi4_data,
 			*f_pos,
 			tmpbuf,
@@ -387,9 +376,8 @@ static ssize_t rmidev_read(struct file *filp, char __user *buf,
 		*f_pos += retval;
 
 clean_up:
-	kfree(tmpbuf);
-unlock:
 	mutex_unlock(&(dev_data->file_mutex));
+
 	return retval;
 }
 
@@ -405,7 +393,7 @@ static ssize_t rmidev_write(struct file *filp, const char __user *buf,
 		size_t count, loff_t *f_pos)
 {
 	ssize_t retval;
-	unsigned char *tmpbuf;
+	unsigned char tmpbuf[count + 1];
 	struct rmidev_data *dev_data = filp->private_data;
 
 	if (IS_ERR(dev_data)) {
@@ -413,31 +401,16 @@ static ssize_t rmidev_write(struct file *filp, const char __user *buf,
 		return -EBADF;
 	}
 
-	mutex_lock(&(dev_data->file_mutex));
-
-	if (*f_pos > REG_ADDR_LIMIT) {
-		retval = -EFAULT;
-		goto unlock;
-	}
+	if (count == 0)
+		return 0;
 
 	if (count > (REG_ADDR_LIMIT - *f_pos))
 		count = REG_ADDR_LIMIT - *f_pos;
 
-	if (count == 0) {
-		retval = 0;
-		goto unlock;
-	}
+	if (copy_from_user(tmpbuf, buf, count))
+		return -EFAULT;
 
-	tmpbuf = kzalloc(count + 1, GFP_KERNEL);
-	if (!tmpbuf) {
-		retval = -ENOMEM;
-		goto unlock;
-	}
-
-	if (copy_from_user(tmpbuf, buf, count)) {
-		retval = -EFAULT;
-		goto clean_up;
-	}
+	mutex_lock(&(dev_data->file_mutex));
 
 	retval = synaptics_rmi4_reg_write(rmidev->rmi4_data,
 			*f_pos,
@@ -446,10 +419,8 @@ static ssize_t rmidev_write(struct file *filp, const char __user *buf,
 	if (retval >= 0)
 		*f_pos += retval;
 
-clean_up:
-	kfree(tmpbuf);
-unlock:
 	mutex_unlock(&(dev_data->file_mutex));
+
 	return retval;
 }
 
@@ -551,7 +522,7 @@ static void rmidev_device_cleanup(struct rmidev_data *dev_data)
 	return;
 }
 
-static char *rmi_char_devnode(struct device *dev, umode_t *mode)
+static char *rmi_char_devnode(struct device *dev, mode_t *mode)
 {
 	if (!mode)
 		return NULL;
@@ -788,14 +759,14 @@ static struct synaptics_rmi4_exp_fn rmidev_module = {
 
 static int __init rmidev_module_init(void)
 {
-	synaptics_rmi4_dsx_new_function(&rmidev_module, true);
+	synaptics_rmi4_new_function(&rmidev_module, true);
 
 	return 0;
 }
 
 static void __exit rmidev_module_exit(void)
 {
-	synaptics_rmi4_dsx_new_function(&rmidev_module, false);
+	synaptics_rmi4_new_function(&rmidev_module, false);
 
 	wait_for_completion(&rmidev_remove_complete);
 
