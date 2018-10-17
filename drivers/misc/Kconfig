@@ -573,6 +573,11 @@ config HAPTIC_ISA1200
 	help
 	  The ISA1200 is a high performance enhanced haptic driver.
 
+config HAPTIC_LC898301
+	tristate "LC898301 haptic support"
+	depends on I2C
+	default n
+
 config QSEECOM
 	tristate "Qualcomm Secure Execution Communicator driver"
 	help

@@ -59,6 +59,9 @@ obj-$(CONFIG_SRAM)		+= sram.o
 obj-$(CONFIG_UID_CPUTIME) += uid_cputime.o
 obj-$(CONFIG_TSIF) += msm_tsif.o
 obj-$(CONFIG_HAPTIC_ISA1200)		+= isa1200.o
+ifdef CONFIG_VENDOR_SMARTISAN
+obj-$(CONFIG_HAPTIC_LC898301)		+= lc898301.o
+endif
 obj-$(CONFIG_QSEECOM) += qseecom.o
 ifdef CONFIG_COMPAT
 obj-$(CONFIG_QSEECOM) += compat_qseecom.o
