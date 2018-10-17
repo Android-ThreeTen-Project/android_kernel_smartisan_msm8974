@@ -9,5 +9,8 @@ obj-$(CONFIG_NFC_WILINK)	+= nfcwilink.o
 obj-$(CONFIG_NFC_MEI_PHY)	+= mei_phy.o
 obj-$(CONFIG_NFC_QNCI)		+= nfc-nci.o
 obj-$(CONFIG_NFC_NQ)		+= nq-nci.o
+ifdef CONFIG_VENDOR_SMARTISAN
+obj-$(CONFIG_NFC_BCM2079X)	+= bcm2079x.o
+endif
 
 ccflags-$(CONFIG_NFC_DEBUG) := -DDEBUG
