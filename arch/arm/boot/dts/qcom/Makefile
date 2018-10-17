@@ -1,5 +1,13 @@
 ifeq ($(CONFIG_OF),y)
 
+ifeq ($(CONFIG_VENDOR_SMARTISAN),y)
+dtb-$(CONFIG_ARCH_MSM8974) += sfo-v10-msm8974pro-ab-pm8941.dtb \
+	sfo-v20-msm8974pro-ab-pm8941.dtb \
+	sfo-v30-msm8974pro-ab-pm8941.dtb \
+	sfo-v30-msm8974pro-ac-pm8941.dtb \
+	sfo-v40-msm8974pro-ab-pm8941.dtb \
+	sfo-v40-msm8974pro-ac-pm8941.dtb
+else
 dtb-$(CONFIG_ARCH_MSM8974) += msm8974-v1-cdp.dtb \
 	msm8974-v1-fluid.dtb \
 	msm8974-v1-liquid.dtb \
@@ -28,6 +36,7 @@ dtb-$(CONFIG_ARCH_MSM8974) += msm8974-v1-cdp.dtb \
 	msm8974pro-ac-pm8941-liquid.dtb \
 	msm8974pro-ac-pm8941-mtp.dtb \
 	msm8974pro-ac-pma8084-pm8941-mtp.dtb
+endif
 dtb-$(CONFIG_ARCH_MSM8909) += msm8909-sim.dtb \
 	msm8909-rumi.dtb \
 	msm8909-qrd-skua.dtb \
