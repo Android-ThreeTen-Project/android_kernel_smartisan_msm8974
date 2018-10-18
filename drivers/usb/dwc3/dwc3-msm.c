@@ -77,7 +77,11 @@ module_param(override_phy_init, int, S_IRUGO|S_IWUSR);
 MODULE_PARM_DESC(override_phy_init, "Override HSPHY Init Seq");
 
 /* Enable Proprietary charger detection */
+#ifdef CONFIG_VENDOR_SMARTISAN
+static bool prop_chg_detect = true;
+#else
 static bool prop_chg_detect;
+#endif
 module_param(prop_chg_detect, bool, S_IRUGO | S_IWUSR);
 MODULE_PARM_DESC(prop_chg_detect, "Enable Proprietary charger detection");
 
@@ -2442,6 +2446,10 @@ dwc3_msm_property_is_writeable(struct power_supply *psy,
 	case POWER_SUPPLY_PROP_PRESENT:
 	case POWER_SUPPLY_PROP_VOLTAGE_MAX:
 		return 1;
+#ifdef CONFIG_VENDOR_SMARTISAN
+	case POWER_SUPPLY_PROP_CURRENT_MAX:
+		return 1;
+#endif
 	default:
 		break;
 	}
@@ -2451,8 +2459,13 @@ dwc3_msm_property_is_writeable(struct power_supply *psy,
 
 
 static char *dwc3_msm_pm_power_supplied_to[] = {
+#ifdef CONFIG_VENDOR_SMARTISAN
+	"main_battery",
+	"back_battery",
+#else
 	"battery",
 	"bms",
+#endif
 };
 
 static enum power_supply_property dwc3_msm_pm_power_props_usb[] = {
@@ -3557,11 +3570,18 @@ static int dwc3_msm_pm_resume(struct device *dev)
 #ifdef CONFIG_PM_RUNTIME
 static int dwc3_msm_runtime_idle(struct device *dev)
 {
+#ifndef CONFIG_VENDOR_SMARTISAN
 	struct dwc3_msm *mdwc = dev_get_drvdata(dev);
+#endif
 
 	dev_dbg(dev, "DWC3-msm runtime idle\n");
 
+#ifdef CONFIG_VENDOR_SMARTISAN
+	//workaround: remove ext_chg_active conditions for charger detection
+	if (true) {
+#else
 	if (mdwc->ext_chg_active) {
+#endif
 		dev_dbg(dev, "Deferring LPM\n");
 		/*
 		 * Charger detection may happen in user space.

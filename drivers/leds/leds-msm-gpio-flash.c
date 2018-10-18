@@ -22,6 +22,9 @@
 #include <linux/printk.h>
 #include <linux/list.h>
 #include <linux/pinctrl/consumer.h>
+#ifdef CONFIG_VENDOR_SMARTISAN
+#include <linux/regulator/consumer.h>
+#endif
 
 /* #define CONFIG_GPIO_FLASH_DEBUG */
 #undef CDBG
@@ -64,6 +67,37 @@ static struct of_device_id led_gpio_flash_of_match[] = {
 	{},
 };
 
+#ifdef CONFIG_VENDOR_SMARTISAN
+static struct regulator *batfet;
+void batfet_ctrl(struct device *dev, int enable)
+{
+	int rc;
+
+	if (!batfet) {
+		if (enable) {
+			batfet = devm_regulator_get(dev, "batfet");
+			if (IS_ERR(batfet)) {
+				pr_err("unable to get batfet regulator: %ld\n",
+				       PTR_ERR(batfet));
+				batfet = NULL;
+				return;
+			}
+		} else {
+			pr_err("Batfet regulator disable w/o enable\n");
+			return;
+		}
+	}
+	if (enable)
+		rc = regulator_enable(batfet);
+	else
+		rc = regulator_disable(batfet);
+
+	if (rc)
+		pr_err("failed to %s batfet regulator: %d\n",
+		       enable ? "enable" : "disable", rc);
+}
+#endif
+
 static void led_gpio_brightness_set(struct led_classdev *led_cdev,
 				    enum led_brightness value)
 {
@@ -75,16 +109,31 @@ static void led_gpio_brightness_set(struct led_classdev *led_cdev,
 	int flash_en = 0, flash_now = 0;
 
 	if (brightness > LED_HALF) {
+#ifdef CONFIG_VENDOR_SMARTISAN
+		batfet_ctrl(led_cdev->dev->parent, 1);
+		flash_en = 1;
+		flash_now = 1;
+#else
 		flash_en =
 			flash_led->ctrl_seq[FLASH_EN].flash_on_val;
 		flash_now =
 			flash_led->ctrl_seq[FLASH_NOW].flash_on_val;
+#endif
 	} else if (brightness > LED_OFF) {
+#ifdef CONFIG_VENDOR_SMARTISAN
+		batfet_ctrl(led_cdev->dev->parent, 1);
+		flash_en = 1;
+		flash_now = 0;
+#else
 		flash_en =
 			flash_led->ctrl_seq[FLASH_EN].torch_on_val;
 		flash_now =
 			flash_led->ctrl_seq[FLASH_NOW].torch_on_val;
+#endif
 	} else {
+#ifdef CONFIG_VENDOR_SMARTISAN
+		batfet_ctrl(led_cdev->dev->parent, 0);
+#endif
 		flash_en = 0;
 		flash_now = 0;
 	}
@@ -96,12 +145,15 @@ static void led_gpio_brightness_set(struct led_classdev *led_cdev,
 		       flash_led->flash_en);
 		goto err;
 	}
+#ifndef CONFIG_VENDOR_SMARTISAN
 	rc = gpio_direction_output(flash_led->flash_now, flash_now);
 	if (rc) {
 		pr_err("%s: Failed to set gpio %d\n", __func__,
 		       flash_led->flash_now);
 		goto err;
 	}
+#endif
+
 	flash_led->brightness = brightness;
 err:
 	return;
@@ -173,6 +225,7 @@ int led_gpio_flash_probe(struct platform_device *pdev)
 		}
 	}
 
+#ifndef CONFIG_VENDOR_SMARTISAN
 	flash_led->flash_now = of_get_named_gpio(node, "qcom,flash-now", 0);
 	if (flash_led->flash_now < 0) {
 		dev_err(&pdev->dev,
@@ -188,6 +241,7 @@ int led_gpio_flash_probe(struct platform_device *pdev)
 			goto error;
 		}
 	}
+#endif
 
 	rc = of_property_read_string(node, "linux,name", &flash_led->cdev.name);
 	if (rc) {

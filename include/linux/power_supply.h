@@ -60,6 +60,9 @@ enum {
 	POWER_SUPPLY_HEALTH_COOL,
 	POWER_SUPPLY_HEALTH_WATCHDOG_TIMER_EXPIRE,
 	POWER_SUPPLY_HEALTH_SAFETY_TIMER_EXPIRE,
+#ifdef CONFIG_VENDOR_SMARTISAN
+	POWER_SUPPLY_HEALTH_BACK_BAT_POOR_CONNECTION,
+#endif
 };
 
 enum {
@@ -201,6 +204,9 @@ enum power_supply_type {
 	POWER_SUPPLY_TYPE_BMS,		/* Battery Monitor System */
 	POWER_SUPPLY_TYPE_USB_PARALLEL,		/* USB Parallel Path */
 	POWER_SUPPLY_TYPE_WIPOWER,		/* Wipower */
+#ifdef CONFIG_VENDOR_SMARTISAN
+	POWER_SUPPLY_TYPE_BACK_BATTERY, /* Backup battery */
+#endif
 };
 
 union power_supply_propval {

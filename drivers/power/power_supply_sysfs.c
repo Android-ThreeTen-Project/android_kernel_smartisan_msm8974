@@ -47,6 +47,9 @@ static ssize_t power_supply_show_property(struct device *dev,
 		"Unknown", "Battery", "UPS", "Mains", "USB", "USB_DCP",
 		"USB_CDP", "USB_ACA", "USB_HVDCP", "Wireless", "BMS",
 		"USB_Parallel", "Wipower"
+#ifdef CONFIG_VENDOR_SMARTISAN
+		, "Back_Battery"
+#endif
 	};
 	static char *status_text[] = {
 		"Unknown", "Charging", "Discharging", "Not charging", "Full"
@@ -58,6 +61,9 @@ static ssize_t power_supply_show_property(struct device *dev,
 		"Unknown", "Good", "Overheat", "Warm", "Dead", "Over voltage",
 		"Unspecified failure", "Cold", "Cool", "Watchdog timer expire",
 		"Safety timer expire"
+#ifdef CONFIG_VENDOR_SMARTISAN
+		, "BackBatteryPoorConnection"
+#endif
 	};
 	static char *technology_text[] = {
 		"Unknown", "NiMH", "Li-ion", "Li-poly", "LiFe", "NiCd",

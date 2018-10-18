@@ -28,6 +28,9 @@
 #include <linux/msm_bcl.h>
 #include <linux/power_supply.h>
 #include <linux/cpumask.h>
+#ifdef CONFIG_VENDOR_SMARTISAN
+#include <linux/power/battery_common.h>
+#endif
 
 #define BCL_DEV_NAME "battery_current_limit"
 #define BCL_NAME_LENGTH 20
@@ -384,7 +387,14 @@ static int bcl_get_battery_voltage(int *vbatt_mv)
 	union power_supply_propval ret = {0,};
 
 	if (psy == NULL) {
+#ifdef CONFIG_VENDOR_SMARTISAN
+		if (current_used_batt)
+			psy = power_supply_get_by_name("main_battery");
+		else
+			psy = power_supply_get_by_name("back_battery");
+#else
 		psy = power_supply_get_by_name("battery");
+#endif
 		if (psy  == NULL) {
 			pr_err("failed to get ps battery\n");
 			return -EINVAL;
