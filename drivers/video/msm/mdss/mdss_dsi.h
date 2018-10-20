@@ -350,6 +350,10 @@ struct mdss_dsi_ctrl_pdata {
 	int disp_en_gpio;
 	int bklt_en_gpio;
 	int mode_gpio;
+#ifdef CONFIG_SANFRANCISCO_LCD_JDI
+	int disp_enn_en_gpio;
+	int disp_enp_en_gpio;
+#endif
 	int bklt_ctrl;	/* backlight ctrl */
 	bool pwm_pmi;
 	int pwm_period;
