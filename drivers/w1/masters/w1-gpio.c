@@ -50,6 +50,9 @@ static u8 w1_gpio_read_bit(void *data)
 #if defined(CONFIG_OF)
 static struct of_device_id w1_gpio_dt_ids[] = {
 	{ .compatible = "w1-gpio" },
+#ifdef CONFIG_VENDOR_SMARTISAN
+	{ .compatible = "qcom,w1-gpio" },
+#endif
 	{}
 };
 MODULE_DEVICE_TABLE(of, w1_gpio_dt_ids);
@@ -63,6 +66,25 @@ static int w1_gpio_probe_dt(struct platform_device *pdev)
 	pdata = devm_kzalloc(&pdev->dev, sizeof(*pdata), GFP_KERNEL);
 	if (!pdata)
 		return -ENOMEM;
+
+#ifdef CONFIG_VENDOR_SMARTISAN
+	if (of_device_is_compatible(np, "qcom,w1-gpio")) {
+		pdata->pin = of_get_named_gpio(np, "qcom,batt_id_pin", 0);
+		if (!gpio_is_valid(pdata->pin)) {
+			dev_err(&pdev->dev, "invalid battery ID GPIO: %d\n",
+				pdata->pin);
+			return pdata->pin;
+		}
+
+		if (of_property_read_u32(np, "qcom,is_open_drain",
+					 &pdata->is_open_drain))
+			pdata->is_open_drain = 0;
+
+		pdata->ext_pullup_enable_pin = -EINVAL;
+		pdev->dev.platform_data = pdata;
+		return 0;
+	}
+#endif
 
 	if (of_get_property(np, "linux,open-drain", NULL))
 		pdata->is_open_drain = 1;
@@ -153,7 +175,8 @@ static int w1_gpio_probe(struct platform_device *pdev)
 	if (gpio_is_valid(pdata->ext_pullup_enable_pin))
 		gpio_free(pdata->ext_pullup_enable_pin);
  free_gpio:
-	gpio_free(pdata->pin);
+	if (gpio_is_valid(pdata->pin))
+		gpio_free(pdata->pin);
  free_master:
 	kfree(master);
 
