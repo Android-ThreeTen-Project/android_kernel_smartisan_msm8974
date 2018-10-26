@@ -61,6 +61,10 @@ struct msm_sensor_fn_t {
 	int (*sensor_power_down) (struct msm_sensor_ctrl_t *);
 	int (*sensor_power_up) (struct msm_sensor_ctrl_t *);
 	int (*sensor_match_id) (struct msm_sensor_ctrl_t *);
+#ifdef CONFIG_VENDOR_SMARTISAN
+	int (*sensor_get_af_status)(struct msm_sensor_ctrl_t *, void __user *);
+	int (*sensor_get_af_distance)(struct msm_sensor_ctrl_t *, void __user *);
+#endif
 };
 
 struct msm_sensor_ctrl_t {

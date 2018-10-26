@@ -916,4 +916,9 @@ spi_unregister_device(struct spi_device *spi)
 extern const struct spi_device_id *
 spi_get_device_id(const struct spi_device *sdev);
 
+#ifdef CONFIG_M10MO
+int spi_send_data_interface(const unsigned char *spi_tx_buf,
+	unsigned int size);
+#endif
+
 #endif /* __LINUX_SPI_H */

@@ -158,6 +158,12 @@ config OV5648
 		snapshot set to 2592*1944 at 12 fps,
 		This sensor driver does not support auto focus.
 
+config M10MO
+	bool "Fujitsu M10MO camera ISP"
+	depends on MSMB_CAMERA && VENDOR_SMARTISAN
+	---help---
+	  Enable the external Fujitsu M10MO ISP used by Smartisan SFO.
+
 config MT9M114
 	bool "Sensor MT9M114 (YUV 1.26MP)"
 	depends on MSMB_CAMERA

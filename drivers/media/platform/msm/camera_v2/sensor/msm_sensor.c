@@ -17,6 +17,7 @@
 #include "msm_camera_i2c_mux.h"
 #include <linux/regulator/rpm-smd-regulator.h>
 #include <linux/regulator/consumer.h>
+#include <media/v4l2-event.h>
 
 #undef CDBG
 #define CDBG(fmt, args...) pr_debug(fmt, ##args)
@@ -607,11 +608,37 @@ static void msm_sensor_stop_stream(struct msm_sensor_ctrl_t *s_ctrl)
 static int msm_sensor_get_af_status(struct msm_sensor_ctrl_t *s_ctrl,
 			void __user *argp)
 {
+#ifdef CONFIG_VENDOR_SMARTISAN
+	if (s_ctrl->func_tbl->sensor_get_af_status)
+		return s_ctrl->func_tbl->sensor_get_af_status(s_ctrl, argp);
+#endif
 	/* TO-DO: Need to set AF status register address and expected value
 	We need to check the AF status in the sensor register and
 	set the status in the *status variable accordingly*/
 	return 0;
 }
+
+#ifdef CONFIG_VENDOR_SMARTISAN
+static int msm_sensor_get_af_distance(struct msm_sensor_ctrl_t *s_ctrl,
+	void __user *argp)
+{
+	if (s_ctrl->func_tbl->sensor_get_af_distance)
+		return s_ctrl->func_tbl->sensor_get_af_distance(s_ctrl, argp);
+	return -EOPNOTSUPP;
+}
+
+static int msm_sensor_subscribe_event(struct v4l2_subdev *sd,
+	struct v4l2_fh *fh, struct v4l2_event_subscription *sub)
+{
+	return v4l2_event_subscribe(fh, sub, 5, NULL);
+}
+
+static int msm_sensor_unsubscribe_event(struct v4l2_subdev *sd,
+	struct v4l2_fh *fh, struct v4l2_event_subscription *sub)
+{
+	return v4l2_event_unsubscribe(fh, sub);
+}
+#endif
 
 static long msm_sensor_subdev_ioctl(struct v4l2_subdev *sd,
 			unsigned int cmd, void *arg)
@@ -634,6 +661,10 @@ static long msm_sensor_subdev_ioctl(struct v4l2_subdev *sd,
 		return rc;
 	case VIDIOC_MSM_SENSOR_GET_AF_STATUS:
 		return msm_sensor_get_af_status(s_ctrl, argp);
+#ifdef CONFIG_VENDOR_SMARTISAN
+	case VIDIOC_MSM_SENSOR_GET_AF_DISTANCE:
+		return msm_sensor_get_af_distance(s_ctrl, argp);
+#endif
 	case VIDIOC_MSM_SENSOR_RELEASE:
 	case MSM_SD_SHUTDOWN:
 		msm_sensor_stop_stream(s_ctrl);
@@ -1418,6 +1449,10 @@ static int msm_sensor_v4l2_enum_fmt(struct v4l2_subdev *sd,
 static struct v4l2_subdev_core_ops msm_sensor_subdev_core_ops = {
 	.ioctl = msm_sensor_subdev_ioctl,
 	.s_power = msm_sensor_power,
+#ifdef CONFIG_VENDOR_SMARTISAN
+	.subscribe_event = msm_sensor_subscribe_event,
+	.unsubscribe_event = msm_sensor_unsubscribe_event,
+#endif
 };
 
 static struct v4l2_subdev_video_ops msm_sensor_subdev_video_ops = {
@@ -1454,6 +1489,9 @@ static struct msm_camera_i2c_fn_t msm_sensor_cci_func_tbl = {
 static struct msm_camera_i2c_fn_t msm_sensor_qup_func_tbl = {
 	.i2c_read = msm_camera_qup_i2c_read,
 	.i2c_read_seq = msm_camera_qup_i2c_read_seq,
+#ifdef CONFIG_VENDOR_SMARTISAN
+	.i2c_read_seq_addr = msm_camera_qup_i2c_read_seq_addr,
+#endif
 	.i2c_write = msm_camera_qup_i2c_write,
 	.i2c_write_table = msm_camera_qup_i2c_write_table,
 	.i2c_write_seq_table = msm_camera_qup_i2c_write_seq_table,

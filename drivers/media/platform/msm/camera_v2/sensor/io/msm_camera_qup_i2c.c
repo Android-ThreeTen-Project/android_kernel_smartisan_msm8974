@@ -174,6 +174,48 @@ int32_t msm_camera_qup_i2c_read_seq(struct msm_camera_i2c_client *client,
 	return rc;
 }
 
+#ifdef CONFIG_VENDOR_SMARTISAN
+int32_t msm_camera_qup_i2c_read_seq_addr(
+	struct msm_camera_i2c_client *client, uint32_t addr, uint32_t addr2,
+	uint8_t *data, uint32_t num_byte, int external_buffer)
+{
+	unsigned char *buf;
+	size_t buf_size;
+	int32_t rc;
+
+	(void)external_buffer;
+	if (!client || !client->client || !data || !num_byte)
+		return -EINVAL;
+	if (client->addr_type != MSM_CAMERA_I2C_5B_ADDR &&
+		client->addr_type != MSM_CAMERA_I2C_8B_ADDR)
+		return -EINVAL;
+	if (num_byte > 0xffff)
+		return -EMSGSIZE;
+
+	buf_size = max_t(size_t, client->addr_type, num_byte);
+	buf = kzalloc(buf_size, GFP_KERNEL);
+	if (!buf)
+		return -ENOMEM;
+
+	buf[0] = addr >> 24;
+	buf[1] = addr >> 16;
+	buf[2] = addr >> 8;
+	buf[3] = addr;
+	buf[4] = addr2 >> 24;
+	if (client->addr_type == MSM_CAMERA_I2C_8B_ADDR) {
+		buf[5] = addr2 >> 16;
+		buf[6] = addr2 >> 8;
+		buf[7] = addr2;
+	}
+
+	rc = msm_camera_qup_i2c_rxdata(client, buf, num_byte);
+	if (rc >= 0)
+		memcpy(data, buf, num_byte);
+	kfree(buf);
+	return rc;
+}
+#endif
+
 int32_t msm_camera_qup_i2c_write(struct msm_camera_i2c_client *client,
 	uint32_t addr, uint16_t data,
 	enum msm_camera_i2c_data_type data_type)
@@ -266,6 +308,27 @@ int32_t msm_camera_qup_i2c_write_seq(struct msm_camera_i2c_client *client,
 	return rc;
 }
 
+#ifdef CONFIG_VENDOR_SMARTISAN
+static int32_t msm_camera_qup_i2c_write_data(
+	struct msm_camera_i2c_client *client,
+	struct msm_camera_i2c_seq_reg_data *reg_data)
+{
+	uint32_t total;
+
+	if (!client || !reg_data || !reg_data->data)
+		return -EINVAL;
+	if (client->addr_type != MSM_CAMERA_I2C_WORD_ADDR)
+		return -EINVAL;
+	if (reg_data->data_size > 0xffff - I2C_SEQ_REG_DATA_HEAD)
+		return -EMSGSIZE;
+	if (reg_data->reg_data_size != reg_data->data_size + 6)
+		return -EINVAL;
+
+	total = reg_data->data_size + I2C_SEQ_REG_DATA_HEAD;
+	return msm_camera_qup_i2c_txdata(client, reg_data->data, total);
+}
+#endif
+
 int32_t msm_camera_qup_i2c_write_table(struct msm_camera_i2c_client *client,
 	struct msm_camera_i2c_reg_setting *write_setting)
 {
@@ -326,14 +389,26 @@ int32_t msm_camera_qup_i2c_write_seq_table(struct msm_camera_i2c_client *client,
 	}
 
 	reg_setting = write_setting->reg_setting;
+	if (reg_setting->reg_data_size > I2C_SEQ_REG_DATA_MAX) {
+#ifdef CONFIG_VENDOR_SMARTISAN
+		struct msm_camera_i2c_seq_reg_data *reg_data;
+
+		if (write_setting->size != 1)
+			return -EINVAL;
+		client_addr_type = client->addr_type;
+		client->addr_type = write_setting->addr_type;
+		reg_data = (struct msm_camera_i2c_seq_reg_data *)reg_setting;
+		rc = msm_camera_qup_i2c_write_data(client, reg_data);
+		goto apply_delay;
+#else
+		pr_err("%s: number of bytes %u exceeds max %d\n", __func__,
+			reg_setting->reg_data_size, I2C_SEQ_REG_DATA_MAX);
+		return rc;
+#endif
+	}
+
 	client_addr_type = client->addr_type;
 	client->addr_type = write_setting->addr_type;
-
-	if (reg_setting->reg_data_size > I2C_SEQ_REG_DATA_MAX) {
-		pr_err("%s: number of bytes %u exceeding the max supported %d\n",
-		__func__, reg_setting->reg_data_size, I2C_SEQ_REG_DATA_MAX);
-		return rc;
-	}
 
 	for (i = 0; i < write_setting->size; i++) {
 		rc = msm_camera_qup_i2c_write_seq(client, reg_setting->reg_addr,
@@ -342,6 +417,8 @@ int32_t msm_camera_qup_i2c_write_seq_table(struct msm_camera_i2c_client *client,
 			break;
 		reg_setting++;
 	}
+
+apply_delay:
 	if (write_setting->delay > 20)
 		msleep(write_setting->delay);
 	else if (write_setting->delay)
@@ -588,4 +665,3 @@ int32_t msm_camera_qup_i2c_write_conf_tbl(
 	}
 	return rc;
 }
-

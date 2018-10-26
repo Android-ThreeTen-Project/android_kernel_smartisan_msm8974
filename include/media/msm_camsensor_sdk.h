@@ -20,6 +20,13 @@
 #define I2C_SEQ_REG_DATA_MAX    256
 #define I2C_REG_DATA_MAX       (8*1024)
 
+#ifdef CONFIG_VENDOR_SMARTISAN
+#define I2C_SEQ_REG_DATA_HEAD    8
+#define I2C_SEQ_REG_DATA_YUYV    (2 * 1024 * 1024)
+#define I2C_SEQ_REG_DATA_FUJI    (8 * 1024)
+#define I2C_SEQ_REG_DATA_M10MO   (64 * 1024)
+#endif
+
 #define MAX_ACTUATOR_REG_TBL_SIZE 8
 #define MAX_ACTUATOR_REGION       5
 #define NUM_ACTUATOR_DIR          2
@@ -66,6 +73,13 @@ enum msm_camera_i2c_reg_addr_type {
 	MSM_CAMERA_I2C_BYTE_ADDR = 1,
 	MSM_CAMERA_I2C_WORD_ADDR,
 	MSM_CAMERA_I2C_3B_ADDR,
+#ifdef CONFIG_VENDOR_SMARTISAN
+	MSM_CAMERA_I2C_4B_ADDR,
+	MSM_CAMERA_I2C_5B_ADDR,
+	MSM_CAMERA_I2C_6B_ADDR,
+	MSM_CAMERA_I2C_7B_ADDR,
+	MSM_CAMERA_I2C_8B_ADDR,
+#endif
 	MSM_CAMERA_I2C_ADDR_TYPE_MAX,
 };
 
@@ -94,6 +108,11 @@ enum msm_sensor_power_seq_gpio_t {
 	SENSOR_GPIO_FL_RESET,
 	SENSOR_GPIO_CUSTOM1,
 	SENSOR_GPIO_CUSTOM2,
+#ifdef CONFIG_VENDOR_SMARTISAN
+	SENSOR_GPIO_INT,
+	SENSOR_GPIO_SIO_CS,
+	SENSOR_GPIO_MOD_ID,
+#endif
 	SENSOR_GPIO_MAX,
 };
 
@@ -267,6 +286,16 @@ struct msm_camera_i2c_seq_reg_array {
 	unsigned char reg_data[I2C_SEQ_REG_DATA_MAX];
 	unsigned short reg_data_size;
 };
+
+#ifdef CONFIG_VENDOR_SMARTISAN
+struct msm_camera_i2c_seq_reg_data {
+	unsigned short reg_addr;
+	unsigned char reg_data[I2C_SEQ_REG_DATA_MAX];
+	unsigned short reg_data_size;
+	unsigned char *data;
+	unsigned int data_size;
+};
+#endif
 
 struct msm_camera_i2c_seq_reg_setting {
 	struct msm_camera_i2c_seq_reg_array *reg_setting;

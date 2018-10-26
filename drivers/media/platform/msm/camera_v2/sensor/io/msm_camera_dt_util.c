@@ -826,6 +826,17 @@ int msm_camera_init_gpio_pin_tbl(struct device_node *of_node,
 	uint16_t gpio_array_size)
 {
 	int rc = 0, val = 0;
+#ifdef CONFIG_VENDOR_SMARTISAN
+	int i;
+	static const struct {
+		const char *property;
+		enum msm_sensor_power_seq_gpio_t index;
+	} sfo_gpio_map[] = {
+		{ "qcom,gpio-interrupt", SENSOR_GPIO_INT },
+		{ "qcom,gpio-sio-cs", SENSOR_GPIO_SIO_CS },
+		{ "qcom,gpio-mod-id", SENSOR_GPIO_MOD_ID },
+	};
+#endif
 
 	gconf->gpio_num_info = kzalloc(sizeof(struct msm_camera_gpio_num_info),
 		GFP_KERNEL);
@@ -834,6 +845,26 @@ int msm_camera_init_gpio_pin_tbl(struct device_node *of_node,
 		rc = -ENOMEM;
 		return rc;
 	}
+
+#ifdef CONFIG_VENDOR_SMARTISAN
+	for (i = 0; i < ARRAY_SIZE(sfo_gpio_map); i++) {
+		rc = of_property_read_u32(of_node, sfo_gpio_map[i].property,
+			&val);
+		if (rc == -EINVAL) {
+			rc = 0;
+			continue;
+		}
+		if (rc < 0 || val >= gpio_array_size) {
+			pr_err("%s: invalid %s index %d, rc %d\n", __func__,
+				sfo_gpio_map[i].property, val, rc);
+			rc = rc < 0 ? rc : -EINVAL;
+			goto ERROR;
+		}
+		gconf->gpio_num_info->gpio_num[sfo_gpio_map[i].index] =
+			gpio_array[val];
+		gconf->gpio_num_info->valid[sfo_gpio_map[i].index] = 1;
+	}
+#endif
 
 	rc = of_property_read_u32(of_node, "qcom,gpio-vana", &val);
 	if (rc != -EINVAL) {
