@@ -53,12 +53,13 @@
 
 #ifdef CONFIG_ANDROID_RAM_CONSOLE
 /*
- * Keep the final MiB below the MSM8974 shared-RAM window across warm boots.
- * The bootloader exposes this range as normal RAM; reserving it before the
- * other MSM memory pools prevents Linux, ION, and CMA from allocating it.
+ * Keep the final MiB below the bootloader's top-of-DDR memory pool across
+ * warm boots.  The region immediately below shared RAM (0x0f900000) is
+ * cleared by the SFO bootloader, so it cannot retain the console header.
+ * 0x7f600000 is outside the boot image load area and the device's CMA pools;
+ * reserving it here keeps Linux and ION from allocating it.
  */
-#define MSM8974_RAM_CONSOLE_START \
-	(MSM8974_MSM_SHARED_RAM_PHYS - SZ_1M)
+#define MSM8974_RAM_CONSOLE_START 0x7F600000
 #define MSM8974_RAM_CONSOLE_SIZE SZ_1M
 
 static struct persistent_ram_descriptor msm8974_ram_console_desc = {
