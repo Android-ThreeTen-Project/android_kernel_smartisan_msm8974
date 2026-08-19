@@ -20,10 +20,12 @@
 #include <linux/of_address.h>
 #include <linux/of_platform.h>
 #include <linux/memory.h>
+#include <linux/persistent_ram.h>
 #include <linux/regulator/machine.h>
 #include <linux/regulator/krait-regulator.h>
 #include <linux/msm_tsens.h>
 #include <linux/msm_thermal.h>
+#include <asm/sizes.h>
 #include <asm/mach/map.h>
 #include <asm/hardware/gic.h>
 #include <asm/mach/map.h>
@@ -49,6 +51,63 @@
 #include "modem_notifier.h"
 #include "platsmp.h"
 
+#ifdef CONFIG_ANDROID_RAM_CONSOLE
+/*
+ * Keep the final MiB below the MSM8974 shared-RAM window across warm boots.
+ * The bootloader exposes this range as normal RAM; reserving it before the
+ * other MSM memory pools prevents Linux, ION, and CMA from allocating it.
+ */
+#define MSM8974_RAM_CONSOLE_START \
+	(MSM8974_MSM_SHARED_RAM_PHYS - SZ_1M)
+#define MSM8974_RAM_CONSOLE_SIZE SZ_1M
+
+static struct persistent_ram_descriptor msm8974_ram_console_desc = {
+	.name = "ram_console",
+	.size = MSM8974_RAM_CONSOLE_SIZE,
+};
+
+static struct persistent_ram msm8974_ram_console = {
+	.start = MSM8974_RAM_CONSOLE_START,
+	.size = MSM8974_RAM_CONSOLE_SIZE,
+	.num_descs = 1,
+	.descs = &msm8974_ram_console_desc,
+};
+
+static struct platform_device msm8974_ram_console_device = {
+	.name = "ram_console",
+	.id = -1,
+};
+
+static bool msm8974_ram_console_reserved;
+
+static void __init msm8974_reserve_ram_console(void)
+{
+	int ret;
+
+	ret = persistent_ram_early_init(&msm8974_ram_console);
+	if (ret) {
+		pr_err("Failed to reserve MSM8974 RAM console: %d\n", ret);
+		return;
+	}
+
+	msm8974_ram_console_reserved = true;
+}
+
+static void __init msm8974_add_ram_console(void)
+{
+	int ret;
+
+	if (!msm8974_ram_console_reserved)
+		return;
+
+	ret = platform_device_register(&msm8974_ram_console_device);
+	if (ret)
+		pr_err("Failed to register MSM8974 RAM console: %d\n", ret);
+}
+#else
+static inline void msm8974_reserve_ram_console(void) { }
+static inline void msm8974_add_ram_console(void) { }
+#endif
 
 static struct memtype_reserve msm8974_reserve_table[] __initdata = {
 	[MEMTYPE_SMI] = {
@@ -75,6 +134,7 @@ void __init msm_8974_reserve(void)
 {
 	reserve_info = &msm8974_reserve_info;
 	of_scan_flat_dt(dt_scan_for_memory_reserve, msm8974_reserve_table);
+	msm8974_reserve_ram_console();
 	msm_reserve();
 }
 
@@ -175,6 +235,7 @@ void __init msm8974_init(void)
 #endif
 	regulator_has_full_constraints();
 	board_dt_populate(adata);
+	msm8974_add_ram_console();
 	msm8974_add_drivers();
 }
 
