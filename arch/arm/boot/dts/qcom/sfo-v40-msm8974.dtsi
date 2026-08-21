@@ -816,7 +816,3 @@
 //		qcom,channel-type = <0x1540>;
 //	};
 //};
-
-&dsi_jdi_1080_cmd {
-       qcom,cont-splash-enabled;
-};
