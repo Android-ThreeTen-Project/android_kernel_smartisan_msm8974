@@ -20,9 +20,11 @@
 #include <linux/of_address.h>
 #include <linux/of_platform.h>
 #include <linux/memory.h>
+#include <linux/pstore_ram.h>
 #include <linux/regulator/machine.h>
 #include <linux/regulator/krait-regulator.h>
 #include <linux/regulator/rpm-smd-regulator.h>
+#include <linux/sizes.h>
 #include <asm/mach/map.h>
 #include <asm/mach/map.h>
 #include <asm/mach/arch.h>
@@ -41,9 +43,69 @@
 #include "clock.h"
 #include "platsmp.h"
 
+#if defined(CONFIG_ANDROID_RAM_CONSOLE) && defined(CONFIG_VENDOR_SMARTISAN)
+/*
+ * Keep the final MiB below the bootloader's top-of-DDR memory pool across
+ * warm boots. The region immediately below shared RAM (0x0f900000) is
+ * cleared by the SFO bootloader, so it cannot retain the console header.
+ * 0x7f600000 is outside the boot image load area and the device's CMA pools;
+ * reserving it here keeps Linux and ION from allocating it.
+ */
+#define SFO_RAM_CONSOLE_START 0x7F600000
+#define SFO_RAM_CONSOLE_SIZE SZ_1M
+
+static struct persistent_ram_descriptor sfo_ram_console_desc = {
+	.name = "ram_console",
+	.size = SFO_RAM_CONSOLE_SIZE,
+};
+
+static struct persistent_ram sfo_ram_console = {
+	.start = SFO_RAM_CONSOLE_START,
+	.size = SFO_RAM_CONSOLE_SIZE,
+	.num_descs = 1,
+	.descs = &sfo_ram_console_desc,
+};
+
+static struct platform_device sfo_ram_console_device = {
+	.name = "ram_console",
+	.id = -1,
+};
+
+static bool sfo_ram_console_reserved;
+
+static void __init sfo_reserve_ram_console(void)
+{
+	int ret;
+
+	ret = persistent_ram_early_init(&sfo_ram_console);
+	if (ret) {
+		pr_err("Failed to reserve SFO RAM console: %d\n", ret);
+		return;
+	}
+
+	sfo_ram_console_reserved = true;
+}
+
+static void __init sfo_add_ram_console(void)
+{
+	int ret;
+
+	if (!sfo_ram_console_reserved)
+		return;
+
+	ret = platform_device_register(&sfo_ram_console_device);
+	if (ret)
+		pr_err("Failed to register SFO RAM console: %d\n", ret);
+}
+#else
+static inline void sfo_reserve_ram_console(void) { }
+static inline void sfo_add_ram_console(void) { }
+#endif
+
 void __init msm_8974_reserve(void)
 {
 	of_scan_flat_dt(dt_scan_for_memory_reserve, NULL);
+	sfo_reserve_ram_console();
 }
 
 /*
@@ -129,6 +191,7 @@ void __init msm8974_init(void)
 #endif
 	regulator_has_full_constraints();
 	msm8974_add_drivers();
+	sfo_add_ram_console();
 }
 
 static const char *msm8974_dt_match[] __initconst = {

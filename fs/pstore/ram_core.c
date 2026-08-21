@@ -518,7 +518,7 @@ static int __init persistent_ram_buffer_init(const char *name,
 			desc = &ram->descs[i];
 			if (!strcmp(desc->name, name))
 				return persistent_ram_buffer_map(start,
-						desc->size, prz);
+						desc->size, prz, 0);
 			start += desc->size;
 		}
 	}
