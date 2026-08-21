@@ -370,6 +370,34 @@ static int cgroup_init_idr(struct cgroup_subsys *ss,
  * chain of tasks off each css_set.  Nests outside task->alloc_lock
  * due to cgroup_iter_start() */
 static DEFINE_RWLOCK(css_set_lock);
+
+bool task_under_cgroup_hierarchy(struct task_struct *task,
+				 struct cgroup *ancestor)
+{
+	struct css_set *css;
+	struct cgroup *cgrp = NULL;
+	bool ret;
+
+	read_lock(&css_set_lock);
+	css = task->cgroups;
+	if (css == &init_css_set) {
+		cgrp = &ancestor->root->top_cgroup;
+	} else {
+		struct cg_cgroup_link *link;
+
+		list_for_each_entry(link, &css->cg_links, cg_link_list) {
+			if (link->cgrp->root == ancestor->root) {
+				cgrp = link->cgrp;
+				break;
+			}
+		}
+	}
+	ret = cgrp && cgroup_is_descendant(cgrp, ancestor);
+	read_unlock(&css_set_lock);
+
+	return ret;
+}
+EXPORT_SYMBOL_GPL(task_under_cgroup_hierarchy);
 static int css_set_count;
 
 /*

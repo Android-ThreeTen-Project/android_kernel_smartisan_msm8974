@@ -422,6 +422,14 @@ enum bpf_func_id {
 	BPF_FUNC_probe_write_user,
 
 	/**
+	 * bpf_current_task_under_cgroup(map, index) - Check current membership
+	 * @map: BPF_MAP_TYPE_CGROUP_ARRAY map
+	 * @index: index of the cgroup in the map
+	 * Return: 0 or 1 for the ancestry test, negative error otherwise
+	 */
+	BPF_FUNC_current_task_under_cgroup,
+
+	/**
 	 * bpf_skb_change_tail(skb, len, flags)
 	 * The helper will resize the skb to the given new size,
 	 * to be used f.e. with control messages.
