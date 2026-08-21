@@ -948,7 +948,7 @@ static int bpf_prog_attach(const union bpf_attr *attr)
 					attr->attach_flags);
 		if (ret)
 			bpf_prog_put(prog);
-		cgroup_put(cgrp);
+		atomic_dec(&cgrp->count);
 		break;
 	default:
 		return -EINVAL;
