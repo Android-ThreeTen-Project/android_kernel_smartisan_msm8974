@@ -60,6 +60,7 @@
 #include <linux/scatterlist.h>
 #include <linux/errqueue.h>
 #include <linux/prefetch.h>
+#include <linux/if_vlan.h>
 
 #include <net/protocol.h>
 #include <net/dst.h>
@@ -3315,9 +3316,123 @@ EXPORT_SYMBOL_GPL(skb_gso_transport_seglen);
 
 int skb_ensure_writable(struct sk_buff *skb, int write_len)
 {
+	if (!pskb_may_pull(skb, write_len))
+		return -ENOMEM;
+
 	if (!skb_cloned(skb) || skb_clone_writable(skb, write_len))
 		return 0;
 
 	return pskb_expand_head(skb, 0, 0, GFP_ATOMIC);
 }
 EXPORT_SYMBOL(skb_ensure_writable);
+
+/* Remove an in-band VLAN header while preserving checksum and header state. */
+static int __skb_vlan_pop_tci(struct sk_buff *skb, __be16 *current_tci)
+{
+	struct vlan_hdr *vhdr;
+	int err;
+
+	err = skb_ensure_writable(skb, VLAN_ETH_HLEN);
+	if (unlikely(err))
+		return err;
+
+	if (skb->ip_summed == CHECKSUM_COMPLETE)
+		skb->csum = csum_sub(skb->csum, csum_partial(skb->data +
+							 2 * ETH_ALEN,
+							 VLAN_HLEN, 0));
+
+	vhdr = (struct vlan_hdr *)(skb->data + ETH_HLEN);
+	*current_tci = vhdr->h_vlan_TCI;
+
+	memmove(skb->data + VLAN_HLEN, skb->data, 2 * ETH_ALEN);
+	__skb_pull(skb, VLAN_HLEN);
+
+	vlan_set_encap_proto(skb, vhdr);
+	skb->mac_header += VLAN_HLEN;
+	if (skb_network_offset(skb) < ETH_HLEN)
+		skb_set_network_header(skb, ETH_HLEN);
+	skb_reset_mac_len(skb);
+
+	return 0;
+}
+
+int skb_vlan_pop(struct sk_buff *skb)
+{
+	__be16 tci;
+	int err;
+
+	if (likely(vlan_tx_tag_present(skb))) {
+		skb->vlan_tci = 0;
+	} else {
+		if (unlikely((skb->protocol != htons(ETH_P_8021Q) &&
+			      skb->protocol != htons(ETH_P_8021AD)) ||
+			     skb->len < VLAN_ETH_HLEN))
+			return 0;
+
+		err = __skb_vlan_pop_tci(skb, &tci);
+		if (err)
+			return err;
+	}
+
+	/* Linux 3.4 cannot record an accelerated 802.1ad tag, so leave
+	 * that tag in-band. An 802.1Q tag can still use vlan_tci.
+	 */
+	if (likely(skb->protocol != htons(ETH_P_8021Q) ||
+		   skb->len < VLAN_ETH_HLEN))
+		return 0;
+
+	err = __skb_vlan_pop_tci(skb, &tci);
+	if (unlikely(err))
+		return err;
+
+	__vlan_hwaccel_put_tag(skb, ntohs(tci));
+	return 0;
+}
+EXPORT_SYMBOL(skb_vlan_pop);
+
+static struct sk_buff *skb_vlan_insert_tag_proto(struct sk_buff *skb,
+						  __be16 vlan_proto,
+						  u16 vlan_tci)
+{
+	struct vlan_ethhdr *veth;
+
+	if (skb_cow_head(skb, VLAN_HLEN) < 0) {
+		kfree_skb(skb);
+		return NULL;
+	}
+
+	veth = (struct vlan_ethhdr *)skb_push(skb, VLAN_HLEN);
+	memmove(skb->data, skb->data + VLAN_HLEN, 2 * ETH_ALEN);
+	skb->mac_header -= VLAN_HLEN;
+	veth->h_vlan_proto = vlan_proto;
+	veth->h_vlan_TCI = htons(vlan_tci);
+	skb->protocol = vlan_proto;
+
+	return skb;
+}
+
+int skb_vlan_push(struct sk_buff *skb, __be16 vlan_proto, u16 vlan_tci)
+{
+	if (unlikely(vlan_tx_tag_present(skb))) {
+		u16 current_tag = vlan_tx_tag_get(skb);
+
+		if (!__vlan_put_tag(skb, current_tag))
+			return -ENOMEM;
+		skb->vlan_tci = 0;
+
+		if (skb->ip_summed == CHECKSUM_COMPLETE)
+			skb->csum = csum_add(skb->csum,
+					     csum_partial(skb->data +
+							  2 * ETH_ALEN,
+							  VLAN_HLEN, 0));
+	}
+
+	if (vlan_proto == htons(ETH_P_8021Q)) {
+		__vlan_hwaccel_put_tag(skb, vlan_tci);
+		return 0;
+	}
+
+	return skb_vlan_insert_tag_proto(skb, vlan_proto, vlan_tci) ? 0 :
+		-ENOMEM;
+}
+EXPORT_SYMBOL(skb_vlan_push);
