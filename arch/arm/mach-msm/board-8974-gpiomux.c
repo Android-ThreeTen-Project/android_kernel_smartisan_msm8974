@@ -2635,6 +2635,9 @@ void __init sfo_msm_8974_init_gpiomux(void)
 		msm_gpiomux_install(second_batt_id_configs,
 					ARRAY_SIZE(second_batt_id_configs));
 
+	msm_gpiomux_install(msm_lcd_te_configs,
+			    ARRAY_SIZE(msm_lcd_te_configs));
+
 	msm_gpiomux_install_nowrite(msm_lcd_sfo_configs,
 			ARRAY_SIZE(msm_lcd_sfo_configs));
 
