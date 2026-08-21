@@ -11,6 +11,20 @@
  * GNU General Public License for more details.
  */
 
+&tlmm_pinmux {
+	sfo_flash_en_pin {
+		qcom,pins = <&gp 58>;
+		qcom,num-grp-pins = <1>;
+		qcom,pin-func = <0>;
+		label = "sfo-flash-en";
+
+		sfo_flash_default: default {
+			drive-strength = <2>;
+			bias-disable;
+		};
+	};
+};
+
 &cci {
 	gpios = <&msmgpio 19 0>,
 		<&msmgpio 20 0>;
@@ -24,7 +38,12 @@
 	flashlight {
 		compatible = "qcom,leds-gpio-flash";
 		status = "okay";
+		pinctrl-names = "flash_default";
+		pinctrl-0 = <&sfo_flash_default>;
 		qcom,flash-en = <&msmgpio 58 0>;
+		qcom,op-seq = "flash_en", "flash_now";
+		qcom,torch-seq-val = <1 0>;
+		qcom,flash-seq-val = <1 1>;
 		batfet-supply = <&pm8941_chg_batif>;
 		linux,name = "flashlight";
 		linux,default-trigger = "flashlight-trigger";
