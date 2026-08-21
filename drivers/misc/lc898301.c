@@ -891,6 +891,7 @@ MODULE_DEVICE_TABLE(i2c, lc898301_id);
 #ifdef CONFIG_OF
 static struct of_device_id lc898301_match_table[] = {
 	{ .compatible = "onsemi,lc898301",},
+	{ .compatible = "onsemi,LC898301",},
 	{ },
 };
 #else
@@ -931,4 +932,3 @@ MODULE_LICENSE("GPL");
 MODULE_VERSION(LC898301_DRIVER_VERSION);
 module_init(lc898301_init);
 module_exit(lc898301_exit);
-
