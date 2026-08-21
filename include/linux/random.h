@@ -89,6 +89,7 @@ void prandom_reseed_late(void);
 
 u32 prandom_u32_state(struct rnd_state *);
 void prandom_bytes_state(struct rnd_state *state, void *buf, int nbytes);
+void prandom_seed_full_state(struct rnd_state __percpu *pcpu_state);
 
 /*
  * Handle minimum values for seeds
@@ -120,6 +121,22 @@ static inline int arch_get_random_long(unsigned long *v)
 	return 0;
 }
 static inline int arch_get_random_int(unsigned int *v)
+{
+	return 0;
+}
+static inline int arch_has_random(void)
+{
+	return 0;
+}
+static inline int arch_get_random_seed_long(unsigned long *v)
+{
+	return 0;
+}
+static inline int arch_get_random_seed_int(unsigned int *v)
+{
+	return 0;
+}
+static inline int arch_has_random_seed(void)
 {
 	return 0;
 }

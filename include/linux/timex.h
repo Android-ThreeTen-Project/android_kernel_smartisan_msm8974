@@ -173,6 +173,11 @@ struct timex {
 
 #include <asm/timex.h>
 
+#ifndef random_get_entropy
+/* Architecture-specific code may override this with a finer timer. */
+#define random_get_entropy()	get_cycles()
+#endif
+
 /*
  * SHIFT_PLL is used as a dampening factor to define how much we
  * adjust the frequency correction for a given offset in PLL mode.
