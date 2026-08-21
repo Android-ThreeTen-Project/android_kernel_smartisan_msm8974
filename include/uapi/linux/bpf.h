@@ -592,6 +592,7 @@ struct bpf_tunnel_key {
 	};
 	__u8 tunnel_tos;
 	__u8 tunnel_ttl;
+	__u32 tunnel_label;
 };
 
 /* User return codes for XDP prog type.
