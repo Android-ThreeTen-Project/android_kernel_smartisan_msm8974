@@ -731,7 +731,7 @@ power_off:
 /*---------------------------------------------------------------
  * I2C init/probing/exit functions
  *--------------------------------------------------------------*/
-static int __devinit lc898301_probe(struct i2c_client *client,
+static int lc898301_probe(struct i2c_client *client,
 					const struct i2c_device_id *id)
 {
 	struct i2c_adapter *adapter;
@@ -808,7 +808,7 @@ exit:
 /*---------------------------------------------------------------
  * I2C init/probing/exit functions
  *--------------------------------------------------------------*/
-static int __devexit lc898301_remove(struct i2c_client *client)
+static int lc898301_remove(struct i2c_client *client)
 {
 	struct lc898301_private *private = i2c_get_clientdata(client);
 
@@ -905,7 +905,7 @@ static struct i2c_driver lc898301_driver = {
 		.owner = THIS_MODULE,
 	},
 	.probe = lc898301_probe,
-	.remove = __devexit_p(lc898301_remove),
+	.remove = lc898301_remove,
 	.suspend = lc898301_suspend,
 	.resume = lc898301_resume,
 	.id_table = lc898301_id,
