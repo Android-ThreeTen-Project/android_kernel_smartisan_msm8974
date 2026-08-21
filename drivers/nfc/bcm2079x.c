@@ -42,7 +42,7 @@
 #include <linux/device.h>
 #include <linux/regulator/of_regulator.h>
 #include <linux/clk.h>
-#include <mach/socinfo.h>
+#include <soc/qcom/socinfo.h>
 
 #define USE_WAKE_LOCK
 
