@@ -2188,6 +2188,41 @@ static const struct bpf_func_proto bpf_get_socket_uid_proto = {
 	.arg1_type      = ARG_PTR_TO_CTX,
 };
 
+BPF_CALL_4(bpf_skb_get_tunnel_key, struct sk_buff *, skb,
+	   struct bpf_tunnel_key *, to, u32, size, u64, flags)
+{
+	/* Libra exposes this ABI but intentionally leaves tunnel metadata
+	 * unsupported on its legacy networking stack.
+	 */
+	return 0;
+}
+
+static const struct bpf_func_proto bpf_skb_get_tunnel_key_proto = {
+	.func		= bpf_skb_get_tunnel_key,
+	.gpl_only	= false,
+	.ret_type	= RET_INTEGER,
+	.arg1_type	= ARG_PTR_TO_CTX,
+	.arg2_type	= ARG_PTR_TO_STACK,
+	.arg3_type	= ARG_CONST_STACK_SIZE,
+	.arg4_type	= ARG_ANYTHING,
+};
+
+BPF_CALL_4(bpf_skb_set_tunnel_key, struct sk_buff *, skb,
+	   const struct bpf_tunnel_key *, from, u32, size, u64, flags)
+{
+	return 0;
+}
+
+static const struct bpf_func_proto bpf_skb_set_tunnel_key_proto = {
+	.func		= bpf_skb_set_tunnel_key,
+	.gpl_only	= false,
+	.ret_type	= RET_INTEGER,
+	.arg1_type	= ARG_PTR_TO_CTX,
+	.arg2_type	= ARG_PTR_TO_STACK,
+	.arg3_type	= ARG_CONST_STACK_SIZE,
+	.arg4_type	= ARG_ANYTHING,
+};
+
 static const struct bpf_func_proto *
 sk_filter_func_proto(enum bpf_func_id func_id)
 {
@@ -2244,6 +2279,10 @@ tc_cls_act_func_proto(enum bpf_func_id func_id)
 		return &bpf_skb_vlan_push_proto;
 	case BPF_FUNC_skb_vlan_pop:
 		return &bpf_skb_vlan_pop_proto;
+	case BPF_FUNC_skb_get_tunnel_key:
+		return &bpf_skb_get_tunnel_key_proto;
+	case BPF_FUNC_skb_set_tunnel_key:
+		return &bpf_skb_set_tunnel_key_proto;
 	case BPF_FUNC_skb_change_proto:
 		return &bpf_skb_change_proto_proto;
 	case BPF_FUNC_skb_change_type:

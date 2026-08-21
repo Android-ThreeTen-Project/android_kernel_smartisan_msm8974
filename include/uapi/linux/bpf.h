@@ -305,6 +305,8 @@ enum bpf_func_id {
 	BPF_FUNC_get_cgroup_classid,
 	BPF_FUNC_skb_vlan_push, /* bpf_skb_vlan_push(skb, vlan_proto, vlan_tci) */
 	BPF_FUNC_skb_vlan_pop,  /* bpf_skb_vlan_pop(skb) */
+	BPF_FUNC_skb_get_tunnel_key,
+	BPF_FUNC_skb_set_tunnel_key,
 	BPF_FUNC_perf_event_read=22,	/* u64 bpf_perf_event_read(&map, index) */
 	/**
 	 * bpf_redirect(ifindex, flags) - redirect to another netdev
@@ -574,6 +576,11 @@ struct __sk_buff {
 	__u32 tc_classid;
 	__u32 data;
 	__u32 data_end;
+};
+
+struct bpf_tunnel_key {
+	__u32 tunnel_id;
+	__u32 remote_ipv4;
 };
 
 /* User return codes for XDP prog type.
