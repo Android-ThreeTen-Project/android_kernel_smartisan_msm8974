@@ -1879,6 +1879,8 @@ static int msm_smp2p_probe(struct platform_device *pdev)
 	smp2p_int_cfgs[edge].out_int_mask = irq_bitmask;
 	smp2p_int_cfgs[edge].out_int_ptr = irq_out_ptr;
 	smp2p_int_cfgs[edge].is_configured = true;
+	pr_info("smp2p: configured edge %u irq %u mask %#x\n",
+		edge, irq_line, irq_bitmask);
 	return 0;
 
 missing_key:
@@ -1941,7 +1943,13 @@ static int __init msm_smp2p_init(void)
 
 	return 0;
 }
-module_init(msm_smp2p_init);
+/*
+ * SMEM is registered at arch_initcall time.  Bring the SMP2P edge driver up
+ * before its GPIO and PIL consumers, which use device_initcall via
+ * module_init when built in.  Relying on the final deferred-probe sweep here
+ * leaves the SSR GPIO providers unavailable on some msm8974 boot chains.
+ */
+subsys_initcall(msm_smp2p_init);
 
 MODULE_DESCRIPTION("MSM Shared Memory Point to Point");
 MODULE_LICENSE("GPL v2");
