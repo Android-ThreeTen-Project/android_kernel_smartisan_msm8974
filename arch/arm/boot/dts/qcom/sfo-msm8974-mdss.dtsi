@@ -18,6 +18,7 @@
 	};
 
 	mdss_dsi0: qcom,mdss_dsi@fd922800 {
+		/delete-property/ vdd-supply;
 		vddh-supply = <&pm8941_l10>;  /* Analog Power Supply Voltage for TP 3.1V±0.1 V */
 		vddi-supply = <&pm8941_lvs1>;  /* Degital Power Supply Voltage for LCD 1.8v±0.1v */
 		vddio-supply = <&pm8941_l12>;
@@ -27,49 +28,32 @@
 		qcom,platform-enp-enable-gpio = <&msmgpio 16 0>;    /* LGD_DCDC_ENP */
 
 		qcom,platform-te-gpio = <&msmgpio 12 0>;
-		qcom,platform-supply-entry1 {
+
+		qcom,panel-supply-entries {
+			/delete-node/ qcom,panel-supply-entry@0;
+			/delete-node/ qcom,panel-supply-entry@1;
+
+			qcom,panel-supply-entry@0 {
+				reg = <0>;
 				qcom,supply-name = "vddh";
 				qcom,supply-min-voltage = <3100000>;
 				qcom,supply-max-voltage = <3100000>;
 				qcom,supply-enable-load = <100000>;
 				qcom,supply-disable-load = <100>;
-				qcom,supply-pre-on-sleep = <0>;
 				qcom,supply-post-on-sleep = <2>;
 				qcom,supply-pre-off-sleep = <2>;
-				qcom,supply-post-off-sleep = <0>;
-		};
-		qcom,platform-supply-entry2 {
+			};
+
+			qcom,panel-supply-entry@1 {
+				reg = <1>;
 				qcom,supply-name = "vddi";
 				qcom,supply-min-voltage = <1800000>;
 				qcom,supply-max-voltage = <1800000>;
 				qcom,supply-enable-load = <100000>;
 				qcom,supply-disable-load = <100>;
-				qcom,supply-pre-on-sleep = <0>;
 				qcom,supply-post-on-sleep = <3>;
 				qcom,supply-pre-off-sleep = <2>;
-				qcom,supply-post-off-sleep = <0>;
-		};
-		qcom,platform-supply-entry3 {
-				qcom,supply-name = "vddio";
-				qcom,supply-min-voltage = <1800000>;
-				qcom,supply-max-voltage = <1800000>;
-				qcom,supply-enable-load = <100000>;
-				qcom,supply-disable-load = <100>;
-				qcom,supply-pre-on-sleep = <0>;
-				qcom,supply-post-on-sleep = <20>;
-				qcom,supply-pre-off-sleep = <0>;
-				qcom,supply-post-off-sleep = <0>;
-		};
-		qcom,platform-supply-entry4 {
-				qcom,supply-name = "vdda";
-				qcom,supply-min-voltage = <1200000>;
-				qcom,supply-max-voltage = <1200000>;
-				qcom,supply-enable-load = <100000>;
-				qcom,supply-disable-load = <100>;
-				qcom,supply-pre-on-sleep = <0>;
-				qcom,supply-post-on-sleep = <10>;
-				qcom,supply-pre-off-sleep = <0>;
-				qcom,supply-post-off-sleep = <0>;
+			};
 		};
 	};
 };
