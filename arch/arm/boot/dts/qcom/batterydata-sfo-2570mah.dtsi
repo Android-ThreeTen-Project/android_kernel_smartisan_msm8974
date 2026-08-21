@@ -18,6 +18,7 @@ qcom,sfo-2570mah {
 	qcom,v-cutoff-uv = <3400000>;
 	qcom,chg-term-ua = <125000>;
 	qcom,batt-id-kohm = <158>;
+	qcom,battery-type = "sfo-2570mah";
 
 	qcom,fcc-temp-lut {
 		qcom,lut-col-legend = <(-20) 0 25 40 60>;
