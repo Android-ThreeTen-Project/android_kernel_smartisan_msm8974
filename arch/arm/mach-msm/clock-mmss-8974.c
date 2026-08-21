@@ -2308,6 +2308,13 @@ static struct clk_lookup msm_camera_clocks_8974pro_only[] = {
 	CLK_LOOKUP_OF("cam_clk", camss_mclk0_clk, "0.qcom,camera"),
 	CLK_LOOKUP_OF("cam_clk", camss_mclk1_clk, "1.qcom,camera"),
 	CLK_LOOKUP_OF("cam_clk", camss_mclk2_clk, "2.qcom,camera"),
+#ifdef CONFIG_VENDOR_SMARTISAN
+	CLK_LOOKUP("cam_src_clk", mclk2_clk_src.c, "6c.qcom,camera"),
+	CLK_LOOKUP("cam_src_clk", mclk2_clk_src.c, "6c.qcom,eeprom"),
+	CLK_LOOKUP("cam_clk", camss_mclk2_clk.c, "6c.qcom,camera"),
+	CLK_LOOKUP("cam_clk", camss_mclk2_clk.c, "6c.qcom,eeprom"),
+	CLK_LOOKUP("cam_clk", camss_mclk0_clk.c, "3e.qcom,camera"),
+#endif
 };
 
 static struct clk_lookup msm_camera_clocks_8974_only[] = {
@@ -2836,4 +2843,3 @@ int __init msm_mmsscc_8974_init(void)
 	return platform_driver_register(&msm_clock_mmsscc_driver);
 }
 arch_initcall(msm_mmsscc_8974_init);
-

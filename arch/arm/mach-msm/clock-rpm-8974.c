@@ -164,6 +164,10 @@ static struct clk_lookup msm_clocks_rpm_8974[] = {
 	CLK_LOOKUP_OF("xo",    cxo_pil_mss_clk,        "fc880000.qcom,mss"),
 	CLK_LOOKUP_OF("xo",       cxo_wlan_clk, "fb000000.qcom,wcnss-wlan"),
 	CLK_LOOKUP_OF("rf_clk",         cxo_a2, "fb000000.qcom,wcnss-wlan"),
+#ifdef CONFIG_VENDOR_SMARTISAN
+	CLK_LOOKUP("nfc_clk", cxo_a1_pin.c, "nfc-nci"),
+	CLK_LOOKUP("cam_src_clk", cxo_a2.c, "qcom,camera"),
+#endif
 	CLK_LOOKUP_OF("xo", cxo_pil_pronto_clk,     "fb21b000.qcom,pronto"),
 	CLK_LOOKUP_OF("xo",       cxo_dwc3_clk,                 "msm_dwc3"),
 	CLK_LOOKUP_OF("xo",  cxo_ehci_host_clk,            "msm_ehci_host"),
