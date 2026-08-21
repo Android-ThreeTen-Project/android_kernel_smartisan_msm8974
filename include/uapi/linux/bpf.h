@@ -360,6 +360,8 @@ enum bpf_func_id {
 	 * Return: csum result
 	 */
 	BPF_FUNC_csum_diff,
+	BPF_FUNC_skb_get_tunnel_opt,
+	BPF_FUNC_skb_set_tunnel_opt,
 	/**
 	 * bpf_skb_change_proto(skb, proto, flags)
 	 * Change protocol of the skb. Currently supported is
