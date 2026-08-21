@@ -445,10 +445,12 @@ EXPORT_SYMBOL(__cgroup_bpf_run_filter);
 int __cgroup_bpf_run_filter_sk(struct sock *sk,
 			       enum bpf_attach_type type)
 {
-	struct cgroup *cgrp = sock_cgroup_ptr(&sk->sk_cgrp_data);
+	struct cgroup *cgrp = sk->skcg;
 	struct bpf_prog *prog;
 	int ret = 0;
 
+	if (!cgrp)
+		return 0;
 
 	rcu_read_lock();
 
