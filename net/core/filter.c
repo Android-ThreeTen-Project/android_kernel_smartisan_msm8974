@@ -1286,6 +1286,12 @@ static inline void bpf_push_mac_rcsum(struct sk_buff *skb)
 		skb_postpush_rcsum(skb, skb_mac_header(skb), skb->mac_len);
 }
 
+static inline void bpf_pull_mac_rcsum(struct sk_buff *skb)
+{
+	if (G_TC_AT(skb->tc_verd) & AT_INGRESS)
+		skb_postpull_rcsum(skb, skb_mac_header(skb), skb->mac_len);
+}
+
 BPF_CALL_5(bpf_skb_store_bytes, struct sk_buff *, skb, u32, offset,
 	   const void *, from, u32, len, u64, flags)
 {
@@ -1994,9 +2000,56 @@ static const struct bpf_func_proto bpf_skb_change_tail_proto = {
 	.arg3_type	= ARG_ANYTHING,
 };
 
+BPF_CALL_3(bpf_skb_vlan_push, struct sk_buff *, skb, __be16, vlan_proto,
+	   u16, vlan_tci)
+{
+	int ret;
+
+	if (unlikely(vlan_proto != htons(ETH_P_8021Q) &&
+		     vlan_proto != htons(ETH_P_8021AD)))
+		vlan_proto = htons(ETH_P_8021Q);
+
+	bpf_push_mac_rcsum(skb);
+	ret = skb_vlan_push(skb, vlan_proto, vlan_tci);
+	bpf_pull_mac_rcsum(skb);
+	bpf_compute_data_end(skb);
+
+	return ret;
+}
+
+const struct bpf_func_proto bpf_skb_vlan_push_proto = {
+	.func		= bpf_skb_vlan_push,
+	.gpl_only	= false,
+	.ret_type	= RET_INTEGER,
+	.arg1_type	= ARG_PTR_TO_CTX,
+	.arg2_type	= ARG_ANYTHING,
+	.arg3_type	= ARG_ANYTHING,
+};
+
+BPF_CALL_1(bpf_skb_vlan_pop, struct sk_buff *, skb)
+{
+	int ret;
+
+	bpf_push_mac_rcsum(skb);
+	ret = skb_vlan_pop(skb);
+	bpf_pull_mac_rcsum(skb);
+	bpf_compute_data_end(skb);
+
+	return ret;
+}
+
+const struct bpf_func_proto bpf_skb_vlan_pop_proto = {
+	.func		= bpf_skb_vlan_pop,
+	.gpl_only	= false,
+	.ret_type	= RET_INTEGER,
+	.arg1_type	= ARG_PTR_TO_CTX,
+};
+
 bool bpf_helper_changes_skb_data(void *func)
 {
-	if (func == bpf_skb_store_bytes ||
+	if (func == bpf_skb_vlan_push ||
+	    func == bpf_skb_vlan_pop ||
+	    func == bpf_skb_store_bytes ||
 	    func == bpf_skb_change_proto ||
 	    func == bpf_skb_change_tail ||
 	    func == bpf_skb_pull_data ||
@@ -2187,6 +2240,10 @@ tc_cls_act_func_proto(enum bpf_func_id func_id)
 		return &bpf_clone_redirect_proto;
 	case BPF_FUNC_get_cgroup_classid:
 		return &bpf_get_cgroup_classid_proto;
+	case BPF_FUNC_skb_vlan_push:
+		return &bpf_skb_vlan_push_proto;
+	case BPF_FUNC_skb_vlan_pop:
+		return &bpf_skb_vlan_pop_proto;
 	case BPF_FUNC_skb_change_proto:
 		return &bpf_skb_change_proto_proto;
 	case BPF_FUNC_skb_change_type:
