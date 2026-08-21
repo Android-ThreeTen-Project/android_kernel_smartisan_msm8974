@@ -296,6 +296,49 @@ void ftrace_likely_update(struct ftrace_branch_data *f, int val, int expect);
 #ifndef __linktime_error
 # define __linktime_error(message)
 #endif
+
+#ifndef __ASSEMBLY__
+static __always_inline void __read_once_size(const volatile void *p,
+					    void *res, int size)
+{
+	switch (size) {
+	case 1: *(unsigned char *)res = *(volatile unsigned char *)p; break;
+	case 2: *(unsigned short *)res = *(volatile unsigned short *)p; break;
+	case 4: *(unsigned int *)res = *(volatile unsigned int *)p; break;
+	case 8: *(unsigned long long *)res =
+			*(volatile unsigned long long *)p; break;
+	default:
+		barrier();
+		__builtin_memcpy(res, (const void *)p, size);
+		barrier();
+	}
+}
+
+static __always_inline void __write_once_size(volatile void *p,
+					     void *res, int size)
+{
+	switch (size) {
+	case 1: *(volatile unsigned char *)p = *(unsigned char *)res; break;
+	case 2: *(volatile unsigned short *)p = *(unsigned short *)res; break;
+	case 4: *(volatile unsigned int *)p = *(unsigned int *)res; break;
+	case 8: *(volatile unsigned long long *)p =
+			*(unsigned long long *)res; break;
+	default:
+		barrier();
+		__builtin_memcpy((void *)p, res, size);
+		barrier();
+	}
+}
+
+#define READ_ONCE(x) \
+	({ union { typeof(x) __val; char __c[1]; } __u; \
+	   __read_once_size(&(x), __u.__c, sizeof(x)); __u.__val; })
+
+#define WRITE_ONCE(x, val) \
+	({ typeof(x) __val = (val); \
+	   __write_once_size(&(x), &__val, sizeof(__val)); __val; })
+#endif
+
 /*
  * Prevent the compiler from merging or refetching accesses.  The compiler
  * is also forbidden from reordering successive instances of ACCESS_ONCE(),

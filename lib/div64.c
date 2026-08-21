@@ -78,6 +78,36 @@ s64 div_s64_rem(s64 dividend, s32 divisor, s32 *remainder)
 EXPORT_SYMBOL(div_s64_rem);
 #endif
 
+#ifndef div64_u64_rem
+u64 div64_u64_rem(u64 dividend, u64 divisor, u64 *remainder)
+{
+	u32 high = divisor >> 32;
+	u64 quotient;
+
+	if (high == 0) {
+		u32 rem32;
+
+		quotient = div_u64_rem(dividend, divisor, &rem32);
+		*remainder = rem32;
+	} else {
+		int n = 1 + fls(high);
+
+		quotient = div_u64(dividend >> n, divisor >> n);
+		if (quotient != 0)
+			quotient--;
+
+		*remainder = dividend - quotient * divisor;
+		if (*remainder >= divisor) {
+			quotient++;
+			*remainder -= divisor;
+		}
+	}
+
+	return quotient;
+}
+EXPORT_SYMBOL(div64_u64_rem);
+#endif
+
 /**
  * div64_u64 - unsigned 64bit divide with 64bit divisor
  * @dividend:	64bit dividend
