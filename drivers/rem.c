@@ -12,9 +12,8 @@
 #include <mach/board.h>
 #include <mach/gpio.h>
 #include <mach/gpiomux.h>
-#include <mach/socinfo.h>
-#include <mach/msm_smem.h>
-#include <mach/subsystem_notif.h>
+#include <soc/qcom/smem.h>
+#include <soc/qcom/subsystem_notif.h>
 
 struct restart_notifier_block {
 	unsigned processor;

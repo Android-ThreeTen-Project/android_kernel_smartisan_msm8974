@@ -12,8 +12,8 @@
 #include <mach/board.h>
 #include <mach/gpio.h>
 #include <mach/gpiomux.h>
-#include <mach/socinfo.h>
-#include <mach/msm_smem.h>
+#include <soc/qcom/socinfo.h>
+#include <soc/qcom/smem.h>
 
 //define ddr manufacture id
 #define DDR_MANUFACTURE_ELPIDA_ID   0x03
@@ -69,9 +69,16 @@ static ssize_t hardware_id_store(struct kobject *kobj, struct kobj_attribute *at
 
 static ssize_t ddr_manufacture_id_show(struct kobject *kobj, struct kobj_attribute *attr, char * buf)
 {
-	unsigned int  ddr_id=0;
+	unsigned int ddr_id = 0;
+	unsigned int smem_size = 0;
+	unsigned int *smem_ddr_id;
 	int ret=0;
-	ddr_id = *(unsigned int *)smem_get_entry(SMEM_ID_VENDOR2, &ddr_id);
+
+	smem_ddr_id = smem_get_entry(SMEM_ID_VENDOR2, &smem_size, 0,
+				      SMEM_ANY_HOST_FLAG);
+	if (smem_ddr_id && smem_size >= sizeof(*smem_ddr_id))
+		ddr_id = *smem_ddr_id;
+
 	if (ddr_id == DDR_MANUFACTURE_ELPIDA_ID) {
 		ret = sprintf(buf, "ddr_manufacture_id=%d,ELPIDA \n", ddr_id);
 	} else if (ddr_id == DDR_MANUFACTURE_HYNIX_ID) {
