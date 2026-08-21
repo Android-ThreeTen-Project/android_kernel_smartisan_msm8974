@@ -385,7 +385,7 @@ static void bpf_evict_inode(struct inode *inode)
  */
 static int bpf_show_options(struct seq_file *m, struct dentry *root)
 {
-	umode_t mode = d_inode(root)->i_mode & S_IALLUGO & ~S_ISVTX;
+	umode_t mode = root->d_inode->i_mode & S_IALLUGO & ~S_ISVTX;
 
 	if (mode != S_IRWXUGO)
 		seq_printf(m, ",mode=%o", mode);
