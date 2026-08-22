@@ -417,4 +417,13 @@ struct msm_isp_event_data {
 #define VIDIOC_MSM_ISP_UPDATE_STREAM \
 	_IOWR('V', BASE_VIDIOC_PRIVATE+13, struct msm_vfe_axi_stream_update_cmd)
 
+/*
+ * Smartisan's M10MO ISP userspace uses this private command to update the
+ * VFE clock after the pixel path has already been configured.  This command
+ * deliberately shares its number with the newer CAF register-list ioctl,
+ * but has a different payload and belongs only to the legacy Smartisan ABI.
+ */
+#define VIDIOC_MSM_ISP_VFE_CLK_CFG \
+	_IOWR('V', BASE_VIDIOC_PRIVATE+14, struct msm_vfe_input_cfg)
+
 #endif /* __MSMB_ISP__ */

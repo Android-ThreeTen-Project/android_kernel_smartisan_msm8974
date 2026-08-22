@@ -334,6 +334,31 @@ static int msm_isp_set_clk_rate(struct vfe_device *vfe_dev, long *rate)
 	return 0;
 }
 
+static int msm_isp_cfg_vfe_clk(struct vfe_device *vfe_dev, void *arg)
+{
+	struct msm_vfe_input_cfg *input_cfg = arg;
+	long rate;
+	int rc;
+
+	if (!input_cfg || input_cfg->input_src != VFE_PIX_0 ||
+		!input_cfg->input_pix_clk) {
+		pr_err("%s: invalid input clock configuration\n", __func__);
+		return -EINVAL;
+	}
+
+	rate = input_cfg->input_pix_clk;
+	rc = msm_isp_set_clk_rate(vfe_dev, &rate);
+	if (rc < 0) {
+		pr_err("%s: failed to set VFE clock to %u, rc = %d\n",
+			__func__, input_cfg->input_pix_clk, rc);
+		return rc;
+	}
+
+	vfe_dev->axi_data.src_info[input_cfg->input_src].pixel_clock = rate;
+	input_cfg->input_pix_clk = rate;
+	return 0;
+}
+
 int msm_isp_cfg_pix(struct vfe_device *vfe_dev,
 	struct msm_vfe_input_cfg *input_cfg)
 {
@@ -449,6 +474,11 @@ long msm_isp_ioctl(struct v4l2_subdev *sd,
 	case VIDIOC_MSM_ISP_INPUT_CFG:
 		mutex_lock(&vfe_dev->core_mutex);
 		rc = msm_isp_cfg_input(vfe_dev, arg);
+		mutex_unlock(&vfe_dev->core_mutex);
+		break;
+	case VIDIOC_MSM_ISP_VFE_CLK_CFG:
+		mutex_lock(&vfe_dev->core_mutex);
+		rc = msm_isp_cfg_vfe_clk(vfe_dev, arg);
 		mutex_unlock(&vfe_dev->core_mutex);
 		break;
 	case VIDIOC_MSM_ISP_SET_SRC_STATE:
