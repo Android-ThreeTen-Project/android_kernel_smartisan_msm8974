@@ -28,6 +28,7 @@
 #include <soc/qcom/clock-pll.h>
 #include <soc/qcom/clock-rpm.h>
 #include <soc/qcom/clock-voter.h>
+#include <soc/qcom/socinfo.h>
 
 #include <dt-bindings/clock/msm-clocks-8974.h>
 
@@ -2157,6 +2158,8 @@ static struct pll_config mmpll3_v2_config = {
 	.mn_ena_mask = BIT(24),
 	.main_output_val = BIT(0),
 	.main_output_mask = BIT(0),
+	.aux_output_val = BIT(1),
+	.aux_output_mask = BIT(1),
 };
 
 static int mmss_dbg_set_mux_sel(struct mux_clk *clk, int sel)
@@ -2729,6 +2732,16 @@ static int msm_mmsscc_8974_probe(struct platform_device *pdev)
 	pro_aa = !strcmp(compat, "qcom,mmsscc-8974pro-aa");
 	pro = pro_ac || pro_ab || pro_aa ||
 		     !strcmp(compat, "qcom,mmsscc-8974pro");
+	/*
+	 * The generic 8974pro DT node does not describe the silicon bin.
+	 * Keep the subtype-specific clock limits used by the pre-DT 3.4
+	 * clock driver by deriving the bin from socinfo in that case.
+	 */
+	if (pro && !pro_ac && !pro_ab && !pro_aa) {
+		pro_ac = cpu_is_msm8974pro_ac();
+		pro_ab = cpu_is_msm8974pro_ab();
+		pro_aa = cpu_is_msm8974pro_aa();
+	}
 	v2 = pro || !strcmp(compat, "qcom,mmsscc-8974v2");
 
 	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "cc_base");
