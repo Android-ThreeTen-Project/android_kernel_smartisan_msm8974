@@ -2364,10 +2364,12 @@ long msm_cpp_subdev_ioctl(struct v4l2_subdev *sd,
 	CPP_DBG("E cmd: 0x%x\n", cmd);
 	switch (cmd) {
 	case VIDIOC_MSM_CPP_GET_HW_INFO: {
+		size_t hw_info_len = min_t(size_t, ioctl_ptr->len,
+			sizeof(struct cpp_hw_info));
+
 		CPP_DBG("VIDIOC_MSM_CPP_GET_HW_INFO\n");
 		if (copy_to_user((void __user *)ioctl_ptr->ioctl_ptr,
-			&cpp_dev->hw_info,
-			sizeof(struct cpp_hw_info))) {
+			&cpp_dev->hw_info, hw_info_len)) {
 			mutex_unlock(&cpp_dev->mutex);
 			return -EINVAL;
 		}
