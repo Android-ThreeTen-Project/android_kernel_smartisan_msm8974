@@ -964,9 +964,12 @@ int __msm_jpeg_init(struct msm_jpeg_device *pgmn_dev)
 		JPEG_DBG("%s:%d] name %s", __func__, __LINE__, iommu_name[j]);
 		JPEG_DBG("%s:%d] ctx 0x%x", __func__, __LINE__,
 			(uint32_t)pgmn_dev->iommu_ctx_arr[i]);
-		if (!pgmn_dev->iommu_ctx_arr[i]) {
+		if (IS_ERR_OR_NULL(pgmn_dev->iommu_ctx_arr[i])) {
+			rc = IS_ERR(pgmn_dev->iommu_ctx_arr[i]) ?
+				PTR_ERR(pgmn_dev->iommu_ctx_arr[i]) : -ENODEV;
 			JPEG_PR_ERR("%s: No iommu fw context found\n",
 					__func__);
+			pgmn_dev->iommu_ctx_arr[i] = NULL;
 			goto error;
 		}
 		j++;
@@ -990,7 +993,7 @@ int __msm_jpeg_init(struct msm_jpeg_device *pgmn_dev)
 	return rc;
 error:
 	mutex_destroy(&pgmn_dev->lock);
-	return -EFAULT;
+	return rc ? rc : -EFAULT;
 }
 
 int __msm_jpeg_exit(struct msm_jpeg_device *pgmn_dev)

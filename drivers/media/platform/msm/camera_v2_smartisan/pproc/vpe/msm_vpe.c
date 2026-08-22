@@ -1548,9 +1548,17 @@ static int vpe_probe(struct platform_device *pdev)
 
 	vpe_dev->iommu_ctx_src = msm_iommu_get_ctx("vpe_src");
 	vpe_dev->iommu_ctx_dst = msm_iommu_get_ctx("vpe_dst");
-	if (!vpe_dev->iommu_ctx_src || !vpe_dev->iommu_ctx_dst) {
-		pr_err("%s: cannot get iommu_ctx\n", __func__);
-		rc = -ENODEV;
+	if (IS_ERR_OR_NULL(vpe_dev->iommu_ctx_src) ||
+		IS_ERR_OR_NULL(vpe_dev->iommu_ctx_dst)) {
+		if (IS_ERR(vpe_dev->iommu_ctx_src))
+			rc = PTR_ERR(vpe_dev->iommu_ctx_src);
+		else if (IS_ERR(vpe_dev->iommu_ctx_dst))
+			rc = PTR_ERR(vpe_dev->iommu_ctx_dst);
+		else
+			rc = -ENODEV;
+		pr_err("%s: cannot get iommu_ctx, rc = %d\n", __func__, rc);
+		vpe_dev->iommu_ctx_src = NULL;
+		vpe_dev->iommu_ctx_dst = NULL;
 		goto err_release_mem;
 	}
 

@@ -741,23 +741,44 @@ static void msm_isp_register_ctx(struct msm_isp_buf_mgr *buf_mgr,
 static int msm_isp_attach_ctx(struct msm_isp_buf_mgr *buf_mgr)
 {
 	int rc, i;
+
+	if (!buf_mgr->iommu_domain)
+		return -ENODEV;
+
 	for (i = 0; i < buf_mgr->num_iommu_ctx; i++) {
+		if (IS_ERR_OR_NULL(buf_mgr->iommu_ctx[i])) {
+			rc = IS_ERR(buf_mgr->iommu_ctx[i]) ?
+				PTR_ERR(buf_mgr->iommu_ctx[i]) : -ENODEV;
+			pr_err("%s: invalid IOMMU context %d, rc = %d\n",
+				__func__, i, rc);
+			goto attach_error;
+		}
+
 		rc = iommu_attach_device(buf_mgr->iommu_domain,
 			buf_mgr->iommu_ctx[i]);
 		if (rc) {
-			pr_err("%s: Iommu attach error\n", __func__);
-			return -EINVAL;
+			pr_err("%s: IOMMU context %d attach error, rc = %d\n",
+				__func__, i, rc);
+			goto attach_error;
 		}
 	}
 	return 0;
+
+attach_error:
+	while (--i >= 0)
+		iommu_detach_device(buf_mgr->iommu_domain,
+			buf_mgr->iommu_ctx[i]);
+	return rc;
 }
 
 static void msm_isp_detach_ctx(struct msm_isp_buf_mgr *buf_mgr)
 {
 	int i;
-	for (i = 0; i < buf_mgr->num_iommu_ctx; i++)
-		iommu_detach_device(buf_mgr->iommu_domain,
-			buf_mgr->iommu_ctx[i]);
+	for (i = 0; i < buf_mgr->num_iommu_ctx; i++) {
+		if (!IS_ERR_OR_NULL(buf_mgr->iommu_ctx[i]))
+			iommu_detach_device(buf_mgr->iommu_domain,
+				buf_mgr->iommu_ctx[i]);
+	}
 }
 
 static int msm_isp_init_isp_buf_mgr(
@@ -774,7 +795,10 @@ static int msm_isp_init_isp_buf_mgr(
 	}
 	CDBG("%s: E\n", __func__);
 
-	msm_isp_attach_ctx(buf_mgr);
+	rc = msm_isp_attach_ctx(buf_mgr);
+	if (rc)
+		goto init_error;
+
 	INIT_LIST_HEAD(&buf_mgr->buffer_q);
 	buf_mgr->num_buf_q = num_buf_q;
 	buf_mgr->bufq =
@@ -788,6 +812,9 @@ static int msm_isp_init_isp_buf_mgr(
 	buf_mgr->buf_handle_cnt = 0;
 	return 0;
 bufq_error:
+	msm_isp_detach_ctx(buf_mgr);
+init_error:
+	buf_mgr->open_count = 0;
 	return rc;
 }
 

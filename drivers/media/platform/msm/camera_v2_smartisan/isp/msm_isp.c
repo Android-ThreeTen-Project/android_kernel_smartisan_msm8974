@@ -98,9 +98,10 @@ static int vfe_probe(struct platform_device *pdev)
 	vfe_dev->pdev = pdev;
 	rc = vfe_dev->hw_info->vfe_ops.core_ops.get_platform_data(vfe_dev);
 	if (rc < 0) {
-		pr_err("%s: failed to get platform resources\n", __func__);
+		pr_err("%s: failed to get platform resources, rc = %d\n",
+			__func__, rc);
 		kfree(vfe_dev);
-		return -ENOMEM;
+		return rc;
 	}
 
 	INIT_LIST_HEAD(&vfe_dev->tasklet_q);

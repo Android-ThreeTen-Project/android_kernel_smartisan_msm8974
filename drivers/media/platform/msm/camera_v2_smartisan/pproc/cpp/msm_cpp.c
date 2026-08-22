@@ -1880,9 +1880,11 @@ static int cpp_probe(struct platform_device *pdev)
 	}
 
 	cpp_dev->iommu_ctx = msm_iommu_get_ctx("cpp");
-	if (IS_ERR(cpp_dev->iommu_ctx)) {
-		pr_err("%s: cannot get iommu_ctx\n", __func__);
-		rc = -EPROBE_DEFER;
+	if (IS_ERR_OR_NULL(cpp_dev->iommu_ctx)) {
+		rc = IS_ERR(cpp_dev->iommu_ctx) ?
+			PTR_ERR(cpp_dev->iommu_ctx) : -ENODEV;
+		pr_err("%s: cannot get iommu_ctx, rc = %d\n", __func__, rc);
+		cpp_dev->iommu_ctx = NULL;
 		goto ERROR3;
 	}
 

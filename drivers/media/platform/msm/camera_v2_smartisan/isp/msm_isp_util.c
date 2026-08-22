@@ -1120,7 +1120,16 @@ int msm_isp_open_node(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh)
 
 	vfe_dev->hw_info->vfe_ops.core_ops.init_hw_reg(vfe_dev);
 
-	vfe_dev->buf_mgr->ops->buf_mgr_init(vfe_dev->buf_mgr, "msm_isp", 28);
+	rc = vfe_dev->buf_mgr->ops->buf_mgr_init(vfe_dev->buf_mgr,
+		"msm_isp", 28);
+	if (rc < 0) {
+		pr_err("%s: buffer manager init failed, rc = %ld\n",
+			__func__, rc);
+		vfe_dev->hw_info->vfe_ops.core_ops.release_hw(vfe_dev);
+		mutex_unlock(&vfe_dev->core_mutex);
+		mutex_unlock(&vfe_dev->realtime_mutex);
+		return rc;
+	}
 
 	switch (vfe_dev->vfe_hw_version) {
 	case VFE40_8974V2_VERSION:
