@@ -1780,9 +1780,10 @@ int32_t m10mo_power_down(struct m10mo_ctrl_t *s_ctrl)
 void m10mo_power_down_work(struct work_struct *work)
 {
 	struct m10mo_ctrl_t *s_ctrl = &m10mo_s_ctrl;
+
+	mutex_lock(s_ctrl->power_down_mutex);
 	m10mo_power_down(s_ctrl);
 	mutex_unlock(s_ctrl->power_down_mutex);
-
 }
 
 uint32_t m10mo_gyro_set(struct m10mo_ctrl_t *s_ctrl)
@@ -3871,7 +3872,6 @@ int32_t m10mo_sensor_config(struct msm_sensor_ctrl_t *s_ctrl,
 	}
 
 	case CFG_POWER_DOWN: {
-		mutex_lock(m10mo_ctrl->power_down_mutex);
 		queue_work(m10mo_ctrl->power_q,
 			&m10mo_ctrl->power_work);
 		break;
