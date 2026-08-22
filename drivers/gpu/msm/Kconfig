@@ -40,6 +40,15 @@ config MSM_ADRENO_DEFAULT_GOVERNOR
 	default "simple_ondemand"
 	depends on MSM_KGSL
 
+config MSM_ADRENO_USES_OLD_FIRMWARE
+	bool "Maintain compatibility with old Adreno firmware"
+	default y
+	depends on MSM_KGSL
+	---help---
+	  Select this for old Adreno firmware that does not support the newer
+	  CP_COND_EXEC based pagetable-switch optimization. This is required by
+	  the original A330 firmware shipped on MSM8974 devices.
+
 config MSM_KGSL_DRM
 	bool "Build a DRM interface for the MSM_KGSL driver"
 	depends on MSM_KGSL && DRM
