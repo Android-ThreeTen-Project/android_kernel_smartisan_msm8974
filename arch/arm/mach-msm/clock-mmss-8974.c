@@ -2311,10 +2311,10 @@ static struct clk_lookup msm_camera_clocks_8974pro_only[] = {
 #ifdef CONFIG_VENDOR_SMARTISAN
 	CLK_LOOKUP("cam_src_clk", mclk2_clk_src.c, "6c.qcom,camera"),
 	CLK_LOOKUP("cam_src_clk", mclk2_clk_src.c, "6c.qcom,eeprom"),
-	CLK_LOOKUP("cam_src_clk", mclk2_clk_src.c, "4-003e"),
+	CLK_LOOKUP("cam_src_clk", mclk0_clk_src.c, "4-003e"),
 	CLK_LOOKUP("cam_clk", camss_mclk2_clk.c, "6c.qcom,camera"),
 	CLK_LOOKUP("cam_clk", camss_mclk2_clk.c, "6c.qcom,eeprom"),
-	CLK_LOOKUP("cam_clk", camss_mclk2_clk.c, "4-003e"),
+	CLK_LOOKUP("cam_clk", camss_mclk0_clk.c, "4-003e"),
 	CLK_LOOKUP("cam_clk", camss_mclk0_clk.c, "3e.qcom,camera"),
 #endif
 };
