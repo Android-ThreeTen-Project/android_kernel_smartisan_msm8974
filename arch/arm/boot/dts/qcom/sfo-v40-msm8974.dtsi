@@ -725,7 +725,7 @@
 		qcom,decimation = <0>;
 		qcom,pre-div-channel-scaling = <0>;
 		qcom,calibration-type = "ratiometric";
-		qcom,scale-function = <10>;
+		qcom,scale-function = <15>;
 		qcom,hw-settle-time = <2>;
 		qcom,fast-avg-setup = <0>;
     };
@@ -762,7 +762,7 @@
 		qcom,decimation = <0>;
 		qcom,pre-div-channel-scaling = <0>;
 		qcom,calibration-type = "ratiometric";
-		qcom,scale-function = <10>;
+		qcom,scale-function = <15>;
 		qcom,hw-settle-time = <2>;
 		qcom,fast-avg-setup = <3>;
 		qcom,btm-channel-number = <0x90>;
