@@ -738,6 +738,9 @@
 			"DMIC6", "MIC BIAS4 External",
 			"MIC BIAS4 External", "Digital Mic6";
 
+		clock-names = "osr_clk";
+		clocks = <&clock_rpm clk_div_clk1>;
+
 		qcom,cdc-mclk-gpios = <&pm8941_gpios 15 0>;
 		qcom,taiko-mclk-clk-freq = <9600000>;
 		qcom,prim-auxpcm-gpio-clk  = <&msmgpio 65 0>;
