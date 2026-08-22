@@ -6,7 +6,7 @@
 #include "msm_camera_io_util.h"
 
 #include <linux/time.h>
-#include <mach/socinfo.h>
+#include <soc/qcom/socinfo.h>
 #include <linux/spi/spi.h>
 #include <linux/msm_ion.h>
 #include <media/v4l2-event.h>

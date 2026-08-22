@@ -17,7 +17,7 @@
 #include "msm_camera_io_util.h"
 #include "msm_camera_i2c_mux.h"
 #include <mach/rpm-regulator.h>
-#include <mach/rpm-regulator-smd.h>
+#include <linux/regulator/rpm-smd-regulator.h>
 #include <linux/regulator/consumer.h>
 #ifdef CONFIG_VENDOR_SMARTISAN
 #include <media/v4l2-event.h>
@@ -1357,7 +1357,7 @@ static int msm_sensor_get_af_distance(struct msm_sensor_ctrl_t *s_ctrl,
 static int msm_sensor_subscribe_event(struct v4l2_subdev *sd, struct v4l2_fh *fh,
 	struct v4l2_event_subscription *sub)
 {
-	return v4l2_event_subscribe(fh, sub, 5);
+	return v4l2_event_subscribe(fh, sub, 5, NULL);
 }
 #endif
 
@@ -1904,7 +1904,8 @@ static struct msm_camera_i2c_fn_t msm_sensor_qup_func_tbl = {
 	.i2c_write_conf_tbl = msm_camera_qup_i2c_write_conf_tbl,
 };
 
-int32_t msm_sensor_platform_probe(struct platform_device *pdev, void *data)
+int32_t msm_sensor_platform_probe(struct platform_device *pdev,
+	const void *data)
 {
 	int32_t rc = 0;
 	struct msm_sensor_ctrl_t *s_ctrl =

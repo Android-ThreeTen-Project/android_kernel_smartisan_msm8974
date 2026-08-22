@@ -16,8 +16,8 @@
 #include <linux/uaccess.h>
 #include <linux/slab.h>
 #include <media/msm_gemini.h>
-#include <mach/msm_bus.h>
-#include <mach/msm_bus_board.h>
+#include <linux/msm-bus.h>
+#include <linux/msm-bus-board.h>
 #include "msm_gemini_sync.h"
 #include "msm_gemini_core.h"
 #include "msm_gemini_platform.h"
@@ -1086,4 +1086,3 @@ int __msm_gemini_exit(struct msm_gemini_device *pgmn_dev)
 	kfree(pgmn_dev);
 	return 0;
 }
-

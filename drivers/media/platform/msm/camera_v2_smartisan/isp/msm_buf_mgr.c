@@ -29,7 +29,7 @@
 #include <media/msm_camera_smartisan.h>
 #include <media/msm_isp.h>
 
-#include <mach/iommu.h>
+#include <linux/qcom_iommu.h>
 
 #include "msm.h"
 #include "msm_buf_mgr.h"
@@ -784,7 +784,7 @@ static int msm_isp_init_isp_buf_mgr(
 		pr_err("Bufq malloc error\n");
 		goto bufq_error;
 	}
-	buf_mgr->client = msm_ion_client_create(-1, ctx_name);
+	buf_mgr->client = msm_ion_client_create(ctx_name);
 	buf_mgr->buf_handle_cnt = 0;
 	return 0;
 bufq_error:

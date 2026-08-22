@@ -2334,7 +2334,7 @@ static int32_t msm_m10mo_i2c_probe(struct i2c_client *client,
 		return -EPERM;
 	}
 
-	m10mo_s_ctrl.iclient = msm_ion_client_create(-1, M10MO_SENSOR_NAME);
+	m10mo_s_ctrl.iclient = msm_ion_client_create(M10MO_SENSOR_NAME);
 
 	*feature = 0;
 

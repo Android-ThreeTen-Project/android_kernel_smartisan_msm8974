@@ -15,9 +15,9 @@
 #include <linux/clk.h>
 #include <linux/io.h>
 #include <linux/android_pmem.h>
-#include <mach/clk.h>
+#include <linux/clk.h>
 #include <soc/qcom/camera2_smartisan.h>
-#include <mach/iommu_domains.h>
+#include <linux/msm_iommu_domains.h>
 #include "msm_gemini_platform.h"
 #include "msm_gemini_sync.h"
 #include "msm_gemini_common.h"
@@ -103,7 +103,7 @@ static struct msm_cam_clk_info gemini_imem_clk_info[] = {
 static struct ion_client *msm_gemini_ion_client_create(unsigned int heap_mask,
 		  const char *name)
 {
-	return msm_ion_client_create(heap_mask, name);
+	return msm_ion_client_create(name);
 }
 #else
 static struct ion_client *msm_gemini_ion_client_create(unsigned int heap_mask,
@@ -280,4 +280,3 @@ int msm_gemini_platform_release(struct resource *mem, void *base, int irq,
 	GMN_DBG("%s:%d] success\n", __func__, __LINE__);
 	return result;
 }
-

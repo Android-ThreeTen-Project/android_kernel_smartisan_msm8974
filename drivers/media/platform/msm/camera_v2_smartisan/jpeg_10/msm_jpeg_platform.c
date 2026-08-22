@@ -15,13 +15,13 @@
 #include <linux/module.h>
 #include <linux/pm_qos.h>
 #include <linux/clk.h>
-#include <mach/clk.h>
+#include <linux/clk.h>
 #include <linux/io.h>
 
 #include <mach/camera.h>
-#include <mach/iommu_domains.h>
-#include <mach/msm_bus.h>
-#include <mach/msm_bus_board.h>
+#include <linux/msm_iommu_domains.h>
+#include <linux/msm-bus.h>
+#include <linux/msm-bus-board.h>
 
 #include "msm_jpeg_platform.h"
 #include "msm_jpeg_sync.h"
@@ -57,7 +57,7 @@ void msm_jpeg_platform_p2v(struct msm_jpeg_device *pgmn_dev, struct file  *file,
 uint32_t msm_jpeg_platform_v2p(struct msm_jpeg_device *pgmn_dev, int fd,
 	uint32_t len, struct file **file_p, struct ion_handle **ionhandle,
 	int domain_num) {
-	unsigned long paddr;
+	dma_addr_t paddr;
 	unsigned long size;
 	int rc;
 	*ionhandle = ion_import_dma_buf(pgmn_dev->jpeg_client, fd);
@@ -288,7 +288,7 @@ int msm_jpeg_platform_init(struct platform_device *pdev,
 	*base = jpeg_base;
 	*irq  = jpeg_irq;
 
-	pgmn_dev->jpeg_client = msm_ion_client_create(-1, "camera/jpeg");
+	pgmn_dev->jpeg_client = msm_ion_client_create("camera/jpeg");
 	JPEG_DBG("%s:%d] success\n", __func__, __LINE__);
 
 	pgmn_dev->state = MSM_JPEG_INIT;
@@ -370,4 +370,3 @@ int msm_jpeg_platform_release(struct resource *mem, void *base, int irq,
 	JPEG_DBG("%s:%d] success\n", __func__, __LINE__);
 	return result;
 }
-

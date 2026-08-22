@@ -14,7 +14,7 @@
 #define _MSM_ISP_BUF_H_
 
 #include <media/msmb_isp_smartisan.h>
-#include <mach/iommu_domains.h>
+#include <linux/msm_iommu_domains.h>
 #include "msm_sd.h"
 
 /*Buffer source can be from userspace / HAL*/
@@ -40,7 +40,7 @@ enum msm_isp_buffer_flush_t {
 
 struct msm_isp_buffer_mapped_info {
 	unsigned long len;
-	unsigned long paddr;
+	dma_addr_t paddr;
 	struct ion_handle *handle;
 };
 

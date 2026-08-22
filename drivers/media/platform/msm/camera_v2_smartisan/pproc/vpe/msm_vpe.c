@@ -17,8 +17,8 @@
 #include <linux/videodev2.h>
 #include <linux/msm_ion.h>
 #include <linux/iommu.h>
-#include <mach/iommu_domains.h>
-#include <mach/iommu.h>
+#include <linux/msm_iommu_domains.h>
+#include <linux/qcom_iommu.h>
 #include <media/v4l2-dev.h>
 #include <media/v4l2-event.h>
 #include <media/v4l2-fh.h>
@@ -210,7 +210,7 @@ static unsigned long msm_vpe_queue_buffer_info(struct vpe_device *vpe_dev,
 
 	rc = ion_map_iommu(vpe_dev->client, buff->map_info.ion_handle,
 		vpe_dev->domain_num, 0, SZ_4K, 0,
-		(unsigned long *)&buff->map_info.phy_addr,
+		&buff->map_info.phy_addr,
 		&buff->map_info.len, 0, 0);
 	if (rc < 0) {
 		pr_err("ION mmap failed\n");
@@ -411,7 +411,7 @@ static int vpe_init_mem(struct vpe_device *vpe_dev)
 {
 	kref_init(&vpe_dev->refcount);
 	kref_get(&vpe_dev->refcount);
-	vpe_dev->client = msm_ion_client_create(-1, "vpe");
+	vpe_dev->client = msm_ion_client_create("vpe");
 
 	if (!vpe_dev->client) {
 		pr_err("couldn't create ion client\n");
@@ -1395,7 +1395,7 @@ static long msm_vpe_subdev_ioctl(struct v4l2_subdev *sd,
 static int msm_vpe_subscribe_event(struct v4l2_subdev *sd, struct v4l2_fh *fh,
 				struct v4l2_event_subscription *sub)
 {
-	return v4l2_event_subscribe(fh, sub, MAX_VPE_V4l2_EVENTS);
+	return v4l2_event_subscribe(fh, sub, MAX_VPE_V4l2_EVENTS, NULL);
 }
 
 static int msm_vpe_unsubscribe_event(struct v4l2_subdev *sd, struct v4l2_fh *fh,
@@ -1483,7 +1483,7 @@ static int vpe_register_domain(void)
 	return msm_register_domain(&vpe_iommu_layout);
 }
 
-static int __devinit vpe_probe(struct platform_device *pdev)
+static int vpe_probe(struct platform_device *pdev)
 {
 	struct vpe_device *vpe_dev;
 	int rc = 0;
@@ -1641,7 +1641,7 @@ static int vpe_device_remove(struct platform_device *dev)
 
 static struct platform_driver vpe_driver = {
 	.probe = vpe_probe,
-	.remove = __devexit_p(vpe_device_remove),
+	.remove = vpe_device_remove,
 	.driver = {
 		.name = MSM_VPE_DRV_NAME,
 		.owner = THIS_MODULE,

@@ -21,7 +21,7 @@
 #include <media/v4l2-device.h>
 #include <mach/board.h>
 #include <mach/vreg.h>
-#include <mach/iommu.h>
+#include <linux/qcom_iommu.h>
 
 #include "msm_isp.h"
 #include "msm_isp_util.h"
@@ -54,7 +54,7 @@ static const struct platform_device_id msm_vfe_dev_id[] = {
 
 static struct msm_isp_buf_mgr vfe_buf_mgr;
 
-static int __devinit vfe_probe(struct platform_device *pdev)
+static int vfe_probe(struct platform_device *pdev)
 {
 	struct vfe_device *vfe_dev;
 	/*struct msm_cam_subdev_info sd_info;*/
