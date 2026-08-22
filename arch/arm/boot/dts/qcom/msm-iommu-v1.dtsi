@@ -521,25 +521,24 @@
 			compatible = "qcom,msm-smmu-v1-ctx";
 			reg = <0xfda4c000 0x1000>;
 			interrupts = <0 65 0>;
-			qcom,iommu-ctx-sids = <0 1>;
-			label = "vfe";
+			qcom,iommu-ctx-sids = <0>;
+			label = "vfe0";
 		};
 
 		qcom,iommu-ctx@fda4d000 {
 			compatible = "qcom,msm-smmu-v1-ctx";
 			reg = <0xfda4d000 0x1000>;
 			interrupts = <0 65 0>;
-			qcom,iommu-ctx-sids = <2>;
-			label = "cpp";
+			qcom,iommu-ctx-sids = <1>;
+			label = "vfe1";
 		};
 
 		qcom,iommu-ctx@fda4e000 {
 			compatible = "qcom,msm-smmu-v1-ctx";
 			reg = <0xfda4e000 0x1000>;
-			interrupts = <0 65 0>, <0 64 0>;
-			qcom,iommu-ctx-sids = <>;
-			label = "vfe_secure";
-			qcom,secure-context;
+			interrupts = <0 65 0>;
+			qcom,iommu-ctx-sids = <2>;
+			label = "cpp";
 		};
 	};
 

@@ -1407,13 +1407,20 @@ static int msm_vfe40_get_platform_data(struct vfe_device *vfe_dev)
 		goto vfe_no_resource;
 	}
 
-	vfe_dev->iommu_ctx[0] = msm_iommu_get_ctx("vfe");
-	if (IS_ERR_OR_NULL(vfe_dev->iommu_ctx[0])) {
-		rc = IS_ERR(vfe_dev->iommu_ctx[0]) ?
-			PTR_ERR(vfe_dev->iommu_ctx[0]) : -ENODEV;
-		pr_err("%s: cannot get vfe iommu_ctx, rc = %d\n",
+	vfe_dev->iommu_ctx[0] = msm_iommu_get_ctx("vfe0");
+	vfe_dev->iommu_ctx[1] = msm_iommu_get_ctx("vfe1");
+	if (IS_ERR_OR_NULL(vfe_dev->iommu_ctx[0]) ||
+		IS_ERR_OR_NULL(vfe_dev->iommu_ctx[1])) {
+		if (IS_ERR(vfe_dev->iommu_ctx[0]))
+			rc = PTR_ERR(vfe_dev->iommu_ctx[0]);
+		else if (IS_ERR(vfe_dev->iommu_ctx[1]))
+			rc = PTR_ERR(vfe_dev->iommu_ctx[1]);
+		else
+			rc = -ENODEV;
+		pr_err("%s: cannot get VFE IOMMU contexts, rc = %d\n",
 			__func__, rc);
 		vfe_dev->iommu_ctx[0] = NULL;
+		vfe_dev->iommu_ctx[1] = NULL;
 		goto vfe_no_resource;
 	}
 
@@ -1463,7 +1470,7 @@ static struct v4l2_subdev_internal_ops msm_vfe40_internal_ops = {
 };
 
 struct msm_vfe_hardware_info vfe40_hw_info = {
-	.num_iommu_ctx = 1,
+	.num_iommu_ctx = 2,
 	.vfe_clk_idx = VFE40_CLK_IDX,
 	.vfe_ops = {
 		.irq_ops = {
