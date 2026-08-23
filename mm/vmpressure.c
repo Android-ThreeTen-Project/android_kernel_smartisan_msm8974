@@ -117,7 +117,7 @@ static struct vmpressure *vmpressure_parent(struct vmpressure *vmpr)
 	return memcg_to_vmpressure(memcg);
 }
 #else
-static struct vmpressure *cg_to_vmpressure(struct cgroup *cg)
+static struct vmpressure *css_to_vmpressure(struct cgroup_subsys_state *css)
 {
 	return NULL;
 }
