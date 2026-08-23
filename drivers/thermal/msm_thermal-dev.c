@@ -28,6 +28,16 @@ struct msm_thermal_ioctl_dev {
 	struct cdev char_dev;
 };
 
+/*
+ * The stock SFO thermal-engine uses the original MSM8974 ioctl ABI.  Keep
+ * that ABI working alongside the extended cluster/voltage ABI provided by
+ * this 3.10 kernel.
+ */
+struct __attribute__((__packed__)) msm_thermal_legacy_ioctl {
+	uint32_t size;
+	struct cpu_freq_arg cpu_freq;
+};
+
 static int msm_thermal_major;
 static struct class *thermal_class;
 static struct msm_thermal_ioctl_dev *msm_thermal_dev;
@@ -59,6 +69,8 @@ static long validate_and_copy(unsigned int *cmd, unsigned long *arg,
 	struct msm_thermal_ioctl *query)
 {
 	long ret = 0, err_val = 0;
+	unsigned int arg_size = _IOC_SIZE(*cmd);
+	struct msm_thermal_legacy_ioctl legacy_query;
 
 	if ((_IOC_TYPE(*cmd) != MSM_THERMAL_MAGIC_NUM) ||
 		(_IOC_NR(*cmd) >= MSM_CMD_MAX_NR)) {
@@ -78,14 +90,49 @@ static long validate_and_copy(unsigned int *cmd, unsigned long *arg,
 		goto validate_exit;
 	}
 
-	if (copy_from_user(query, (void __user *)(*arg),
-		sizeof(struct msm_thermal_ioctl))) {
-		ret = -EACCES;
-		goto validate_exit;
-	}
+	memset(query, 0, sizeof(*query));
+	if (arg_size == sizeof(legacy_query)) {
+		if (_IOC_NR(*cmd) > MSM_SET_CPU_MIN_FREQ) {
+			ret = -ENOTTY;
+			goto validate_exit;
+		}
 
-	if (query->size != sizeof(struct msm_thermal_ioctl)) {
-		pr_err("%s: Invalid input argument size\n", __func__);
+		if (copy_from_user(&legacy_query, (void __user *)(*arg),
+				sizeof(legacy_query))) {
+			ret = -EACCES;
+			goto validate_exit;
+		}
+
+		if (legacy_query.size != sizeof(legacy_query)) {
+			pr_err_ratelimited("%s: Invalid legacy input argument size %u\n",
+				__func__, legacy_query.size);
+			ret = -EINVAL;
+			goto validate_exit;
+		}
+
+		query->size = sizeof(*query);
+		query->cpu_freq.cpu_num = legacy_query.cpu_freq.cpu_num;
+		query->cpu_freq.freq_req = legacy_query.cpu_freq.freq_req;
+		if (_IOC_NR(*cmd) == MSM_SET_CPU_MAX_FREQ)
+			*cmd = MSM_THERMAL_SET_CPU_MAX_FREQUENCY;
+		else
+			*cmd = MSM_THERMAL_SET_CPU_MIN_FREQUENCY;
+	} else if (arg_size == sizeof(*query)) {
+		if (copy_from_user(query, (void __user *)(*arg),
+				sizeof(*query))) {
+			ret = -EACCES;
+			goto validate_exit;
+		}
+
+		if (query->size != sizeof(*query)) {
+			pr_err_ratelimited("%s: Invalid input argument size %u\n",
+				__func__, query->size);
+			ret = -EINVAL;
+			goto validate_exit;
+		}
+	} else {
+		pr_err_ratelimited("%s: Unsupported ioctl argument size %u\n",
+			__func__, arg_size);
 		ret = -EINVAL;
 		goto validate_exit;
 	}
