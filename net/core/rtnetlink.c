@@ -35,6 +35,7 @@
 #include <linux/security.h>
 #include <linux/mutex.h>
 #include <linux/if_addr.h>
+#include <linux/if_arp.h>
 #include <linux/if_bridge.h>
 #include <linux/pci.h>
 #include <linux/etherdevice.h>
@@ -861,6 +862,8 @@ static int rtnl_fill_ifinfo(struct sk_buff *skb, struct net_device *dev,
 	struct nlattr *attr, *af_spec;
 	struct rtnl_af_ops *af_ops;
 	struct net_device *upper_dev = netdev_master_upper_dev_get(dev);
+	bool legacy_rawip_notify = pid == 0 && seq == 0 &&
+				   dev->type == ARPHRD_RAWIP;
 
 	ASSERT_RTNL();
 	nlh = nlmsg_put(skb, pid, seq, type, sizeof(*ifm), flags);
@@ -927,11 +930,21 @@ static int rtnl_fill_ifinfo(struct sk_buff *skb, struct net_device *dev,
 	stats = dev_get_stats(dev, &temp);
 	copy_rtnl_link_stats(nla_data(attr), stats);
 
-	attr = nla_reserve(skb, IFLA_STATS64,
-			sizeof(struct rtnl_link_stats64));
-	if (attr == NULL)
-		goto nla_put_failure;
-	copy_rtnl_link_stats64(nla_data(attr), stats);
+	/*
+	 * Legacy Qualcomm netmgr uses a fixed 1024-byte buffer for link
+	 * notifications.  The 3.10 RTM_NEWLINK payload for a RAWIP device is
+	 * larger than that and is delivered with MSG_TRUNC, so netmgr never
+	 * completes its KIF bring-up state.  IFLA_STATS above carries the same
+	 * counters in the legacy format and is sufficient for notifications;
+	 * keep IFLA_STATS64 for explicit link queries and for all other devices.
+	 */
+	if (!legacy_rawip_notify) {
+		attr = nla_reserve(skb, IFLA_STATS64,
+				sizeof(struct rtnl_link_stats64));
+		if (attr == NULL)
+			goto nla_put_failure;
+		copy_rtnl_link_stats64(nla_data(attr), stats);
+	}
 
 	if (dev->dev.parent && (ext_filter_mask & RTEXT_FILTER_VF) &&
 	    nla_put_u32(skb, IFLA_NUM_VF, dev_num_vf(dev->dev.parent)))
@@ -2786,4 +2799,3 @@ void __init rtnetlink_init(void)
 	rtnl_register(PF_BRIDGE, RTM_DELLINK, rtnl_bridge_dellink, NULL, NULL);
 	rtnl_register(PF_BRIDGE, RTM_SETLINK, rtnl_bridge_setlink, NULL, NULL);
 }
-
