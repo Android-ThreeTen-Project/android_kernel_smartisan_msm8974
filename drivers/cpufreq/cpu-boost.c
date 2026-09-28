@@ -51,6 +51,32 @@ module_param(boost_ms, uint, 0644);
 static unsigned int sync_threshold;
 module_param(sync_threshold, uint, 0644);
 
+/* A persistent policy request survives CPU hotplug; zero releases it. */
+static unsigned int hal_boost_freq;
+
+static int set_hal_boost_freq(const char *buf, const struct kernel_param *kp)
+{
+	int cpu;
+	int ret = param_set_uint(buf, kp);
+
+	if (ret)
+		return ret;
+
+	get_online_cpus();
+	for_each_online_cpu(cpu)
+		cpufreq_update_policy(cpu);
+	put_online_cpus();
+	return 0;
+}
+
+static const struct kernel_param_ops param_ops_hal_boost_freq = {
+	.set = set_hal_boost_freq,
+	.get = param_get_uint,
+};
+module_param_cb(hal_boost_freq, &param_ops_hal_boost_freq,
+		&hal_boost_freq, 0644);
+MODULE_PARM_DESC(hal_boost_freq, "Power HAL CPU frequency floor in kHz");
+
 static bool input_boost_enabled;
 
 static unsigned int input_boost_ms = 40;
@@ -157,14 +183,15 @@ static int boost_adjust_notify(struct notifier_block *nb, unsigned long val,
 	struct cpu_sync *s = &per_cpu(sync_info, cpu);
 	unsigned int b_min = s->boost_min;
 	unsigned int ib_min = s->input_boost_min;
+	unsigned int hal_min = min(hal_boost_freq, policy->max);
 	unsigned int min;
 
 	switch (val) {
 	case CPUFREQ_ADJUST:
-		if (!b_min && !ib_min)
+		if (!b_min && !ib_min && !hal_min)
 			break;
 
-		min = max(b_min, ib_min);
+		min = max(max(b_min, ib_min), hal_min);
 
 		pr_debug("CPU%u policy min before boost: %u kHz\n",
 			 cpu, policy->min);
